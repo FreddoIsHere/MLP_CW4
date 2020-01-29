@@ -3,11 +3,10 @@ import numpy as np
 
 class World_Frame_Generator:
 
-    def __init__(self, file, x_dim, y_dim, z_dim=1):
+    def __init__(self, x_dim, y_dim, z_dim=1):
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.z_dim = z_dim
-        self.file = file
 
     def generate_frame(self, num_of_frames):
         data = []
@@ -29,10 +28,3 @@ class World_Frame_Generator:
                 frame[:, self.y_dim - 1, :] = np.ones((self.x_dim, self.z_dim))
                 frame[:, :, self.z_dim - 1] = np.ones((self.x_dim, self.y_dim))
                 data.append(frame)
-        np.savez(self.file, inputs=data)
-
-
-world = World_Frame_Generator("data.npz", 10, 10)
-world.generate_frame(2)
-out = np.load('data.npz')
-print(out['inputs'])
