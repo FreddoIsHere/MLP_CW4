@@ -138,7 +138,7 @@ class MapGenerator:
         """
         return self.space.get_array()
 
-generator = MapGenerator(10, 10)
+generator = MapGenerator(10, 10) 
 generator.add_obstacle(n=10, max_size=2)
 
 print(generator.get_map())
