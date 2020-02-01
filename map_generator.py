@@ -2,6 +2,9 @@
 
 import numpy as np
 import random
+import argparse
+import pickle
+from tqdm import tqdm
 
 
 class Space:
@@ -39,13 +42,15 @@ class Space:
         # print(obstacle)
         if len(self.get_array().shape) == 2:
             self.array = np.pad(self.get_array(), (
-            (0, pad), (0, pad)))  # 2D - expand the space to prevent index bound errors. It will be undone at the end.
+                (0, pad), (0, pad)),
+                                mode='constant')  # 2D - expand the space to prevent index bound errors. It will be undone at the end.
             self.array[location[0]:end_location[0], location[1]:end_location[1]] = obstacle  # 2D - place the obstacle
             self.array = self.array[:-pad, :-pad]  # 2D remove the paddings.
 
         elif len(self.get_array().shape) == 3:
             self.array = np.pad(self.get_array(), ((0, pad), (0, pad), (
-            0, pad)))  # 3D - expand the space to prevent index bound errors. It will be undone at the end.
+                0, pad)),
+                                mode='constant')  # 3D - expand the space to prevent index bound errors. It will be undone at the end.
             self.array[location[0]:end_location[0], location[1]:end_location[1],
             location[2]:end_location[2]] = obstacle  # 3D - place the obstacle
             self.array = self.array[:-pad, :-pad, :-pad]  # 3D remove the paddings.
@@ -125,7 +130,7 @@ class MapGenerator:
         """
         self.space = Space(*args)
 
-    def add_obstacle(self, n=1, max_size=4):
+    def add_obstacles(self, n=1, max_size=4):
         """ This method is used for adding obstacles to the space.
         
         Keyword Arguments:
@@ -137,7 +142,10 @@ class MapGenerator:
             self.space.add_obstacle(Obstacle(dim=self.space.get_array().ndim, max_length=max_size),
                                     random_location.tolist())
 
-    def get_map(self):
+    def reset(self, *args):
+        self.space = Space(*args)
+
+    def return_map(self):
         """ It returns the generated map.
         
         Returns:
@@ -146,7 +154,23 @@ class MapGenerator:
         return self.space.get_array()
 
 
-generator = MapGenerator(10, 10)
-generator.add_obstacle(n=10, max_size=2)
+def generate_from_parse(num_maps, map_dim, num_obstacles, obstacle_size, file):
+    tqdm_e = tqdm(range(num_maps), desc='Maps generated', leave=True, unit=" maps")
+    generator = MapGenerator(map_dim, map_dim)
+    file = open(file, "wb")
+    for _ in tqdm_e:
+        generator.add_obstacles(n=num_obstacles, max_size=obstacle_size)
+        pickle.dump(generator.return_map(), file)
+        tqdm_e.set_description("Progress")
+        tqdm_e.refresh()
+    file.close()
 
-print(generator.get_map())
+
+parser = argparse.ArgumentParser(description='Map Generator')
+parser.add_argument('--num_maps', nargs="?", type=int, default=10, help='number of maps')
+parser.add_argument('--map_dim', nargs="?", type=int, default=100, help='map dimension nxn')
+parser.add_argument('--num_obstacles', nargs="?", type=int, default=20, help='number of obstacles per map')
+parser.add_argument('--obstacle_size', nargs="?", type=int, default=5, help='obstacle size')
+parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')
+args = parser.parse_args()
+generate_from_parse(args.num_maps, args.map_dim, args.num_obstacles, args.obstacle_size, args.file)
