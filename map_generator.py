@@ -3,6 +3,7 @@
 import numpy as np
 import random
 
+
 class Space:
     def __init__(self, *args):
         """ Space initializer. It takes the dimension sizes as arguments. Put 2 arguments for 2D, 3 arguments for 3D spaces.
@@ -31,20 +32,23 @@ class Space:
         self.__validate_obstacle_arguments(obstacle, location)
         end_location = location.copy()
 
-        for i, length in enumerate(obstacle.shape): # find the exact end indices in the space.
+        for i, length in enumerate(obstacle.shape):  # find the exact end indices in the space.
             end_location[i] += length
-        
+
         pad = obstacle.size
-        #print(obstacle)
+        # print(obstacle)
         if len(self.get_array().shape) == 2:
-            self.array = np.pad(self.get_array(), ((0,pad),  (0, pad))) # 2D - expand the space to prevent index bound errors. It will be undone at the end.
-            self.array[location[0]:end_location[0], location[1]:end_location[1]] = obstacle # 2D - place the obstacle
-            self.array = self.array[:-pad,:-pad] # 2D remove the paddings.
+            self.array = np.pad(self.get_array(), (
+            (0, pad), (0, pad)))  # 2D - expand the space to prevent index bound errors. It will be undone at the end.
+            self.array[location[0]:end_location[0], location[1]:end_location[1]] = obstacle  # 2D - place the obstacle
+            self.array = self.array[:-pad, :-pad]  # 2D remove the paddings.
 
         elif len(self.get_array().shape) == 3:
-            self.array = np.pad(self.get_array(), ((0,pad), (0, pad), (0, pad))) # 3D - expand the space to prevent index bound errors. It will be undone at the end.
-            self.array[location[0]:end_location[0], location[1]:end_location[1], location[2]:end_location[2]] = obstacle # 3D - place the obstacle
-            self.array = self.array[:-pad,:-pad,:-pad] # 3D remove the paddings.
+            self.array = np.pad(self.get_array(), ((0, pad), (0, pad), (
+            0, pad)))  # 3D - expand the space to prevent index bound errors. It will be undone at the end.
+            self.array[location[0]:end_location[0], location[1]:end_location[1],
+            location[2]:end_location[2]] = obstacle  # 3D - place the obstacle
+            self.array = self.array[:-pad, :-pad, :-pad]  # 3D remove the paddings.
 
     def __validate_constructor_arguments(self, args):
         """ It checks if the arguments are in correct format. If not, it throws relevant errors. 
@@ -85,14 +89,16 @@ class Space:
         if not isinstance(location, list):
             raise TypeError('location: "' + str(location) + '" is not a list.')
         elif len(location) != self.array.ndim:
-            raise ValueError('Dimansionality of location ' + str(location) + ' does not match with the space dimension.')
+            raise ValueError(
+                'Dimansionality of location ' + str(location) + ' does not match with the space dimension.')
         else:
             for x in location:
                 if not isinstance(x, int):
                     raise TypeError('"' + str(x) + '" is not an integer.')
 
+
 class Obstacle(np.ndarray):
-    def __new__(self, dim = 2, max_length = 4):
+    def __new__(self, dim=2, max_length=4):
         """ The obstacle class as a subclass of np.ndarray. It should be 3 dimensional for 3D space and 2 dimensional for 2D space.
             The size of the obstacle is selected randomly between 0 and the max_length for each dimension.
             All of the values set to one.
@@ -111,14 +117,14 @@ class Obstacle(np.ndarray):
         for i in range(dim):
             d.append(random.randint(1, max_length))
         return np.ones(shape=tuple(d), dtype=int).view(Obstacle)
-        
+
 
 class MapGenerator:
     def __init__(self, *args):
         """ The map generator. It creates a space and allows to user add some obstacles to it.
         """
         self.space = Space(*args)
-    
+
     def add_obstacle(self, n=1, max_size=4):
         """ This method is used for adding obstacles to the space.
         
@@ -128,7 +134,8 @@ class MapGenerator:
         """
         for i in range(n):
             random_location = np.random.randint(0, self.space.get_array().shape[0], self.space.get_array().ndim)
-            self.space.add_obstacle(Obstacle(dim = self.space.get_array().ndim, max_length=max_size), random_location.tolist())
+            self.space.add_obstacle(Obstacle(dim=self.space.get_array().ndim, max_length=max_size),
+                                    random_location.tolist())
 
     def get_map(self):
         """ It returns the generated map.
@@ -138,9 +145,8 @@ class MapGenerator:
         """
         return self.space.get_array()
 
-generator = MapGenerator(10, 10) 
+
+generator = MapGenerator(10, 10)
 generator.add_obstacle(n=10, max_size=2)
 
 print(generator.get_map())
-
-
