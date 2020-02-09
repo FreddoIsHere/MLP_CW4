@@ -1,5 +1,6 @@
 import numpy as np
 import enum
+from data_providers import DataProvider
 
 
 class Action(enum.Enum):
@@ -13,9 +14,11 @@ class Action(enum.Enum):
 
 class Map_Environment:
 
-    def __init__(self, start_pos, target_pos):
+    def __init__(self, file, start_pos, target_pos):
+        self.data_provider = DataProvider(file)
         self.start_pos = start_pos
         self.state = start_pos
+        self.map = self.data_provider.get_map()
         self.target = target_pos
 
     def step(self, action):
@@ -39,4 +42,5 @@ class Map_Environment:
 
     def reset(self):
         self.state = self.start_pos
-        return self.state
+        self.map = self.data_provider.get_map()
+        return self.state, self.map
