@@ -40,6 +40,10 @@ class Map_Environment:
             Action.minus_Z: self.state + np.array([0, 0, -1])
         }[action]
 
+    def sample(self):
+        idx = np.random.randint(low=1, high=len(Action))
+        return self.execute_action(Action.values()[idx])
+
     def reset(self):
         self.state = self.start_pos
         self.map = self.data_provider.get_map()

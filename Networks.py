@@ -4,10 +4,10 @@ import torch.nn.functional as F
 import torch.autograd as autograd
 
 
-class ConvDQN(nn.Module):
+class Conv_DQN(nn.Module):
 
     def __init__(self, map_dim, state_dim,  value_output_dim):
-        super(ConvDQN, self).__init__()
+        super(Conv_DQN, self).__init__()
         self.map_dim = map_dim
         self.state_dim = state_dim
         self.state_ouput_dim = 16
