@@ -1,13 +1,13 @@
 import pickle
 import numpy as np
 import random
-from mlp import DEFAULT_SEED
+
 from collections import deque
 
 
 class DataProvider(object):
 
-    def __init__(self, file, shuffle_factor=2, seed=DEFAULT_SEED):
+    def __init__(self, file, shuffle_factor=2, seed=123456):
         self.file = open(file, "rb")
         self.shuffle_factor = shuffle_factor
         self.maps = deque(maxlen=50000)

@@ -150,8 +150,9 @@ class MapGenerator:
         
         Returns:
             [np.ndarray] -- The map having the obstacles. 
+            Edit: Padded with extra space in each dimension to guarantee path
         """
-        return self.space.get_array()
+        return np.pad(self.space.get_array(), ((1,1),),'constant')
 
 
 def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstacle_size, max_obstacle_size, file):
