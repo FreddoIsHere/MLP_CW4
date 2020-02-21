@@ -28,6 +28,7 @@ class Map_Object:
         self.y = self.path[:,1]
         if self.is_3d:
             self.z = self.path[:,2]
+
     def generate_plot(self):
         occ_grid = self.data
         fig = plt.figure()

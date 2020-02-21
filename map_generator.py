@@ -26,7 +26,7 @@ class Space:
         return self.array
 
     def add_obstacle(self, obstacle, location):
-        """ It adds gıven obstacle to the given location in the space.
+        """ It adds given obstacle to the given location in the space.
         
         Arguments:
             obstacle {Obstacle object} -- The obstacle object which is a multi-dimensional np.array with all ones.
@@ -171,9 +171,9 @@ def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstac
 
 
 parser = argparse.ArgumentParser(description='Map Generator')
-parser.add_argument('--num_maps', nargs="?", type=int, default=10, help='number of maps')
+parser.add_argument('--num_maps', nargs="?", type=int, default=100, help='number of maps')
 parser.add_argument('--map_format', nargs="?", type=int, default=100, help='map format nxn')
-parser.add_argument('--map_dim', nargs="?", type=int, default=2, help='map dimension')
+parser.add_argument('--map_dim', nargs="?", type=int, default=3, help='map dimension')
 parser.add_argument('--num_obstacles', nargs="?", type=int, default=20, help='number of obstacles per map')
 parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=5, help='obstacle size')
 parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=1, help='obstacle size')
