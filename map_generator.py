@@ -4,8 +4,8 @@ import numpy as np
 import random
 import argparse
 import pickle
+from path_generator import Path
 from tqdm import tqdm
-
 
 class Space:
     def __init__(self, *args):
@@ -129,6 +129,10 @@ class MapGenerator:
         """ The map generator. It creates a space and allows to user add some obstacles to it.
         """
         self.space = Space(*args)
+        self.path_finder = 'a*'
+
+    def set_path_finder(self, path_finder):
+        self.path_finder = path_finder
 
     def add_obstacles(self, n=1, min_size=1, max_size=4):
         """ This method is used for adding obstacles to the space.
@@ -142,8 +146,8 @@ class MapGenerator:
             self.space.add_obstacle(Obstacle(dim=self.space.get_array().ndim, min_length=min_size, max_length=max_size),
                                     random_location.tolist())
 
-    def reset(self, *args):
-        self.space = Space(*args)
+    def reset(self):
+        self.space = Space(*self.space.get_array().shape)
 
     def return_map(self):
         """ It returns the generated map.
@@ -154,20 +158,28 @@ class MapGenerator:
         """
         return np.pad(self.space.get_array(), ((1,1),),'constant')
 
+    def return_optimal_path(self):
+        return Path(self.return_map()).generate_path(method=self.path_finder)
 
-def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstacle_size, max_obstacle_size, file):
+
+def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstacle_size, max_obstacle_size, file, path_finder, path_file):
     tqdm_e = tqdm(range(num_maps), desc='Maps generated', leave=True, unit=" maps")
     if map_dim == 2:
         generator = MapGenerator(map_format, map_format)
     else:
         generator = MapGenerator(map_format, map_format, map_format)
+    generator.set_path_finder(path_finder)
     file = open(file, "wb")
+    path_file = open(path_file, "wb")
     for _ in tqdm_e:
         generator.add_obstacles(n=num_obstacles, min_size=min_obstacle_size, max_size=max_obstacle_size)
         pickle.dump(generator.return_map(), file)
+        pickle.dump(generator.return_optimal_path(), path_file)
+        generator.reset()
         tqdm_e.set_description("Progress")
         tqdm_e.refresh()
     file.close()
+    path_file.close()
 
 
 parser = argparse.ArgumentParser(description='Map Generator')
@@ -178,5 +190,7 @@ parser.add_argument('--num_obstacles', nargs="?", type=int, default=40, help='nu
 parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=8, help='obstacle size')
 parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=4, help='obstacle size')
 parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')
+parser.add_argument('--path_finder', nargs="?", type=str, default='A*', help='Path finder algorithm (A* or dijkstra)')
+parser.add_argument('--path_file', nargs="?", type=str, default='paths', help='Path file name')
 args = parser.parse_args()
-generate_from_parse(args.num_maps, args.map_dim, args.map_format, args.num_obstacles, args.min_obstacle_size, args.max_obstacle_size, args.file)
+generate_from_parse(args.num_maps, args.map_dim, args.map_format, args.num_obstacles, args.min_obstacle_size, args.max_obstacle_size, args.file, args.path_finder, args.path_file)

@@ -25,7 +25,7 @@ class Path:
             self.is_3d = True
         else:
             self.is_3d = False
-        print(self.data.shape)
+        #print(self.data.shape)
 
     def generate_path(self, method="A*"):
         methods = {"Dijkstra", "A*", "dijkstra"}
