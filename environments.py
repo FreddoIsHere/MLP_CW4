@@ -32,7 +32,7 @@ class Map_Environment:
         return self.state, reward, done, {}
 
     def execute_action(self, action):
-        return {
+        state = {
             Action.X.value[0]: self.state + np.array([1, 0, 0]),
             Action.minus_X.value[0]: self.state + np.array([-1, 0, 0]),
             Action.Y.value[0]: self.state + np.array([0, 1, 0]),
@@ -40,6 +40,10 @@ class Map_Environment:
             Action.Z.value[0]: self.state + np.array([0, 0, 1]),
             Action.minus_Z.value[0]: self.state + np.array([0, 0, -1])
         }[action]
+        mask = state < 0
+        state[mask] = 0
+        return state
+
 
     def sample(self):
         idx = np.random.randint(low=1, high=len(Action))
