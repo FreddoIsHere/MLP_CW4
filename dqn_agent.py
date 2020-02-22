@@ -1,9 +1,7 @@
 import torch
 from networks import Conv_DQN
 from memory import Memory
-from environments import Map_Environment
 import torch.nn.functional as F
-import argparse
 from environments import Action
 from tqdm import tqdm
 
@@ -93,7 +91,8 @@ class DQN_Agent:
         self.target_optimizer.step()
 
 
-def train(env, agent, num_episodes, max_steps, batch_size=64):
+def train(env, num_episodes, max_steps, batch_size=64):
+    agent = DQN_Agent(env, (50, 50, 50), 3, 6)
     episode_rewards = []
 
     for e in range(num_episodes):
@@ -121,19 +120,3 @@ def train(env, agent, num_episodes, max_steps, batch_size=64):
 
     agent.save()
     return episode_rewards
-
-
-def predict():
-    pass
-
-
-parser = argparse.ArgumentParser(description='DQN_Agent')
-parser.add_argument('--num_episodes', nargs="?", type=int, default=100, help='number of episodes')
-parser.add_argument('--max_steps', nargs="?", type=int, default=100, help='number of steps')
-parser.add_argument('--batch_size', nargs="?", type=int, default=64, help='size of batches')
-parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')
-args = parser.parse_args()
-
-env = Map_Environment(args.file, np.array([0, 0, 0]), np.array([50, 50, 50]))
-agent = DQN_Agent(env, (50, 50, 50), 3, 6)
-rewards = train(env, agent, args.num_episodes, args.max_steps, args.batch_size)
