@@ -14,11 +14,11 @@ class Conv_DQN(nn.Module):
         self.value_output_dim = value_output_dim
 
         self.map_net = nn.Sequential(
-            nn.Conv2d(in_channels=self.map_dim[0], out_channels=128, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=self.map_dim[0], out_channels=64, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv2d(128, 64, kernel_size=3, stride=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv2d(64, 32, kernel_size=3, stride=1),
+            nn.Conv2d(64, 32, kernel_size=2, stride=1),
             nn.ReLU()
         )
 
@@ -33,11 +33,11 @@ class Conv_DQN(nn.Module):
         self.feature_input_dim = self.feature_size()
 
         self.value_net = nn.Sequential(
-            nn.Linear(self.feature_input_dim + self.state_ouput_dim, 64),
+            nn.Linear(self.feature_input_dim + self.state_ouput_dim, 32),
             nn.ReLU(),
-            nn.Linear(64, 32),
+            nn.Linear(32, 16),
             nn.ReLU(),
-            nn.Linear(32, self.value_output_dim)
+            nn.Linear(16, self.value_output_dim)
         )
 
     def forward(self, state, map):

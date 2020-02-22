@@ -26,7 +26,7 @@ class Memory:
         for experience in batch:
             state, map, action, reward, next_state, done = experience
             state_batch.append(state)
-            map_batch.append(map[0])
+            map_batch.append(map)
             action_batch.append(action)
             reward_batch.append(reward)
             next_state_batch.append(next_state)

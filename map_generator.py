@@ -171,12 +171,12 @@ def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstac
 
 
 parser = argparse.ArgumentParser(description='Map Generator')
-parser.add_argument('--num_maps', nargs="?", type=int, default=100, help='number of maps')
-parser.add_argument('--map_format', nargs="?", type=int, default=100, help='map format nxn')
+parser.add_argument('--num_maps', nargs="?", type=int, default=1000, help='number of maps')
+parser.add_argument('--map_format', nargs="?", type=int, default=48, help='map format nxn')
 parser.add_argument('--map_dim', nargs="?", type=int, default=3, help='map dimension')
-parser.add_argument('--num_obstacles', nargs="?", type=int, default=20, help='number of obstacles per map')
-parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=5, help='obstacle size')
-parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=1, help='obstacle size')
+parser.add_argument('--num_obstacles', nargs="?", type=int, default=40, help='number of obstacles per map')
+parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=8, help='obstacle size')
+parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=4, help='obstacle size')
 parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')
 args = parser.parse_args()
 generate_from_parse(args.num_maps, args.map_dim, args.map_format, args.num_obstacles, args.min_obstacle_size, args.max_obstacle_size, args.file)
