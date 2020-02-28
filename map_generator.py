@@ -152,7 +152,7 @@ class MapGenerator:
             [np.ndarray] -- The map having the obstacles. 
             Edit: Padded with extra space in each dimension to guarantee path
         """
-        return np.pad(self.space.get_array(), ((1,1),),'constant')
+        return np.pad(self.space.get_array(), ((2,2),),'constant')
 
 
 def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstacle_size, max_obstacle_size, file):
@@ -173,8 +173,8 @@ def generate_from_parse(num_maps, map_dim, map_format, num_obstacles, min_obstac
 parser = argparse.ArgumentParser(description='Map Generator')
 parser.add_argument('--num_maps', nargs="?", type=int, default=10, help='number of maps')
 parser.add_argument('--map_format', nargs="?", type=int, default=100, help='map format nxn')
-parser.add_argument('--map_dim', nargs="?", type=int, default=2, help='map dimension')
-parser.add_argument('--num_obstacles', nargs="?", type=int, default=20, help='number of obstacles per map')
+parser.add_argument('--map_dim', nargs="?", type=int, default=3, help='map dimension')
+parser.add_argument('--num_obstacles', nargs="?", type=int, default=50, help='number of obstacles per map')
 parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=5, help='obstacle size')
 parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=1, help='obstacle size')
 parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')

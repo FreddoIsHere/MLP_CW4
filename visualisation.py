@@ -23,11 +23,19 @@ class Map_Object:
             self.is_3d = True
         else:
             self.is_3d = False
-        self.path= Path(data).generate_path()
-        self.x = self.path[:,0]
-        self.y = self.path[:,1]
+        p = Path(data)
+        
+        self.p1 = p.generate_path()
+        self.x1 = self.p1[:,0]
+        self.y1 = self.p1[:,1]
+        self.path = p.generate_path()
+        self.path= p.make_walkable()
+        self.path = np.array(p.remove_diags(self.path))
+        self.x = np.array(self.path[:,0])
+        self.y = np.array(self.path[:,1])
         if self.is_3d:
             self.z = self.path[:,2]
+            self.z1 = self.p1[:,2]
     def generate_plot(self):
         occ_grid = self.data
         fig = plt.figure()
@@ -38,14 +46,18 @@ class Map_Object:
             ax.plot([self.data.shape[0]], [self.data.shape[1]], [self.data.shape[2]], markerfacecolor='r',
                     markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
             ax.plot(self.x,self.y,self.z)
+            ax.plot(self.x1,self.y1,self.z1)
         else:
             cmap = colors.ListedColormap(['white', 'blue'])
             plt.figure(figsize=(6, 6))
-            plt.pcolor(data, cmap=cmap, edgecolors='k', linewidths=1)
+            plt.pcolor(self.data, cmap=cmap, edgecolors='k', linewidths=1)
             # Start and End markers arbitraily assigned to origin and futherest point
             plt.scatter(0, 0, s=100, c='g', marker='o')
             plt.scatter(self.data.shape[0], self.data.shape[1], s=100, c='r', marker='o')
-            plt.plot(self.x, self.y)
+            plt.plot(self.y, self.x)
+            #plt.plot(self.y1,self.x1)
+           # plt.savefig("2d-1.svg")
+        #plt.savefig('3d.svg')
         plt.show()
 
 
