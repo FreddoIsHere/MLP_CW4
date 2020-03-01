@@ -13,11 +13,11 @@ class Conv_DQN(nn.Module):
         self.value_output_dim = value_output_dim
 
         self.map_net = nn.Sequential(
-            nn.Conv2d(in_channels=self.map_dim[0], out_channels=64, kernel_size=3, stride=1),
+            nn.Conv3d(in_channels=1, out_channels=32, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.Conv3d(32, 32, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv2d(64, 32, kernel_size=2, stride=1),
+            nn.Conv3d(32, 16, kernel_size=2, stride=1),
             nn.ReLU()
         )
 

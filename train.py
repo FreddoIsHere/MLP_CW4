@@ -14,7 +14,7 @@ parser.add_argument('--path', nargs="?", type=str, default=os.path.abspath(os.ge
 args = parser.parse_args()
 
 env = Map_Environment(args.file, np.array([0, 0, 0]), np.array([20, 20, 20]))
-agent = DQN_Agent(env, (20, 20, 20), 3, 6, path=args.path)
+agent = DQN_Agent(env, (1, 20, 20, 20), 3, 6, path=args.path)
 rewards = train(env, agent, args.num_episodes, args.max_steps, args.batch_size)
 plt.plot(rewards)
 plt.xlabel("Episode")

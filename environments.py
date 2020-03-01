@@ -52,7 +52,7 @@ class Map_Environment:
 
     def sample(self):
         idx = np.random.randint(low=0, high=len(Action))
-        return self.execute_action(idx)
+        return idx
 
     def reset(self):
         self.state = self.start_pos

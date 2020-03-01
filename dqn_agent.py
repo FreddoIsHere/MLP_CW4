@@ -10,7 +10,7 @@ import numpy as np
 
 class DQN_Agent:
     def __init__(self, env, map_dim, state_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=3e-4,
-                 gamma=0.99, tau=0.1, buffer_size=10000):
+                 gamma=0.99, tau=1.0, buffer_size=10000):
         self.env = env
         self.learning_rate = learning_rate
         self.gamma = gamma
@@ -31,48 +31,42 @@ class DQN_Agent:
             self.model = Conv_DQN(map_dim, state_dim, action_dim)
             self.target = Conv_DQN(map_dim, state_dim, action_dim)
 
-        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=0.99)
 
     def save(self):
         torch.save(self.model, self.path + "/model.pth")
         torch.save(self.target, self.path + "/target.pth")
 
-    def get_action(self, map, explore=True, epsilon=0.01):
-        map = torch.FloatTensor(map).unsqueeze(0)
+    def get_action(self, map, explore=True, epsilon=0.1):
+
+        if np.random.rand() < epsilon and explore:
+            return self.env.sample()
+
+        map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0)
         qvals = self.model.forward(map)
         action = np.argmax(qvals.detach().numpy())
 
-        if np.random.rand() < epsilon and explore:
-            return np.random.randint(low=0, high=len(Action))
         return action
 
     def loss(self, batch):
         maps, actions, rewards, next_maps, dones = batch
-        maps = torch.FloatTensor(maps)
+        maps = torch.FloatTensor(maps).unsqueeze(1)
         actions = torch.LongTensor(actions)
         rewards = torch.FloatTensor(rewards)
-        next_maps = torch.FloatTensor(next_maps)
+        next_maps = torch.FloatTensor(next_maps).unsqueeze(1)
         dones = torch.BoolTensor(dones)
 
         # resize tensors
         actions = actions.view(actions.size(0), 1)
+        rewards = rewards.view(rewards.size(0), 1)
         dones = dones.view(dones.size(0), 1)
 
-        # compute loss
-        model_Q = self.model.forward(maps).gather(1, actions)
+        state_action_values = self.model.forward(maps).gather(1, actions)
+        next_state_action_values = torch.max(self.target.forward(next_maps), 1)[0].unsqueeze(1).detach()
+        expected_state_action_values = rewards + (~dones) * self.gamma * next_state_action_values
+        q_loss = F.mse_loss(state_action_values, expected_state_action_values)
 
-        next_model_Q = self.model.forward(next_maps)
-        next_target_Q = self.target.forward(next_maps)
-        next_Q = torch.min(
-            torch.max(next_model_Q, 1)[0],
-            torch.max(next_target_Q, 1)[0]
-        )
-        next_Q = next_Q.view(next_Q.size(0), 1)
-        expected_Q = rewards + (~dones) * self.gamma * next_Q
-
-        model_loss = F.mse_loss(model_Q, expected_Q.detach())
-
-        return model_loss
+        return q_loss
 
     def train(self, batch_size):
         batch = self.memory.sample(batch_size)
