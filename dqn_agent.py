@@ -10,16 +10,17 @@ import numpy as np
 
 class DQN_Agent:
     def __init__(self, env, map_dim, state_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=3e-4,
-                 gamma=0.99, buffer_size=1000):
+                 gamma=0.99, tau=0.1, buffer_size=10000):
         self.env = env
         self.learning_rate = learning_rate
         self.gamma = gamma
+        self.tau = tau
         self.memory = Memory(max_size=buffer_size)
         self.path = path
 
         try:
-            self.actor = torch.load(self.path + "/model.pth")
-            self.critic = torch.load(self.path + "/target.pth")
+            self.model = torch.load(self.path + "/model.pth")
+            self.target = torch.load(self.path + "/target.pth")
             print("--------------------------------\n"
                   "Models were loaded successfully! \n"
                   "--------------------------------")
@@ -30,30 +31,27 @@ class DQN_Agent:
             self.model = Conv_DQN(map_dim, state_dim, action_dim)
             self.target = Conv_DQN(map_dim, state_dim, action_dim)
 
-        self.model_optimizer = torch.optim.Adam(self.model.parameters())
-        self.target_optimizer = torch.optim.Adam(self.target.parameters())
+        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
 
     def save(self):
         torch.save(self.model, self.path + "/model.pth")
         torch.save(self.target, self.path + "/target.pth")
 
-    def get_action(self, state, map, epsilon=0.1):
-        state = torch.FloatTensor(state).unsqueeze(0)
+    def get_action(self, map, explore=True, epsilon=0.01):
         map = torch.FloatTensor(map).unsqueeze(0)
-        qvals = self.model.forward(state, map)
-        action = np.argmax(qvals.cpu().detach().numpy())
+        qvals = self.model.forward(map)
+        action = np.argmax(qvals.detach().numpy())
 
-        if np.random.randn() < epsilon:
-            return np.random.randint(low=1, high=len(Action))
+        if np.random.rand() < epsilon and explore:
+            return np.random.randint(low=0, high=len(Action))
         return action
 
     def loss(self, batch):
-        states, maps, actions, rewards, next_states, dones = batch
-        states = torch.FloatTensor(states)
+        maps, actions, rewards, next_maps, dones = batch
         maps = torch.FloatTensor(maps)
         actions = torch.LongTensor(actions)
         rewards = torch.FloatTensor(rewards)
-        next_states = torch.FloatTensor(next_states)
+        next_maps = torch.FloatTensor(next_maps)
         dones = torch.BoolTensor(dones)
 
         # resize tensors
@@ -61,11 +59,10 @@ class DQN_Agent:
         dones = dones.view(dones.size(0), 1)
 
         # compute loss
-        model_Q = self.model.forward(states, maps).gather(1, actions)
-        target_Q = self.target.forward(states, maps).gather(1, actions)
+        model_Q = self.model.forward(maps).gather(1, actions)
 
-        next_model_Q = self.model.forward(next_states, maps)  # only if map doesn't change within episode
-        next_target_Q = self.target.forward(next_states, maps)
+        next_model_Q = self.model.forward(next_maps)
+        next_target_Q = self.target.forward(next_maps)
         next_Q = torch.min(
             torch.max(next_model_Q, 1)[0],
             torch.max(next_target_Q, 1)[0]
@@ -74,35 +71,32 @@ class DQN_Agent:
         expected_Q = rewards + (~dones) * self.gamma * next_Q
 
         model_loss = F.mse_loss(model_Q, expected_Q.detach())
-        target_loss = F.mse_loss(target_Q, expected_Q.detach())
 
-        return model_loss, target_loss
+        return model_loss
 
     def train(self, batch_size):
         batch = self.memory.sample(batch_size)
-        model_loss, target_loss = self.loss(batch)
+        model_loss = self.loss(batch)
 
         self.model_optimizer.zero_grad()
         model_loss.backward()
         self.model_optimizer.step()
 
-        self.target_optimizer.zero_grad()
-        target_loss.backward()
-        self.target_optimizer.step()
+        for target_param, param in zip(self.target.parameters(), self.model.parameters()):
+            target_param.data = (param.data * self.tau + target_param.data * (1.0 - self.tau)).clone()
 
 
-def train(env, num_episodes, max_steps, batch_size=64):
-    agent = DQN_Agent(env, (50, 50, 50), 3, 6)
+def train(env, agent, num_episodes, max_steps, batch_size=64):
     episode_rewards = []
 
     for e in range(num_episodes):
-        state, map = env.reset()
+        map = env.reset()
         episode_reward = 0
-        tqdm_s = tqdm(range(max_steps), desc = 'Training', leave = True, unit = " steps")
+        tqdm_s = tqdm(range(max_steps), desc='Training', leave=True, unit=" step")
         for step in tqdm_s:
-            action = agent.get_action(state, map)
-            next_state, reward, done, _ = env.step(action)
-            agent.memory.push(state, map, action, reward, next_state, done)
+            action = agent.get_action(map)
+            next_map, reward, done, _ = env.step(action)
+            agent.memory.push(map, action, reward, next_map, done)
             episode_reward += reward
 
             if len(agent.memory) > batch_size:
@@ -113,9 +107,9 @@ def train(env, num_episodes, max_steps, batch_size=64):
             if done:
                 break
 
-            state = next_state
+            map = next_map
 
-        print("Episode reward: " + str(episode_reward))
+        print("Episode {} reward: {}".format(e, episode_reward))
         episode_rewards.append(episode_reward)
 
     agent.save()
