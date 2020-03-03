@@ -2,7 +2,7 @@ import os
 import argparse
 import numpy as np
 from environments import Map_Environment
-from dqn_agent import DQN_Agent, train
+from ppo_agent import DQN_Agent, train
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='DQN_Agent')

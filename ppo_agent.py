@@ -1,5 +1,5 @@
 import torch
-from networks import Conv_DQN
+from networks import Conv_Net
 from memory import Memory
 import torch.nn.functional as F
 from environments import Action
@@ -8,7 +8,7 @@ from tqdm import tqdm
 import numpy as np
 
 
-class DQN_Agent:
+class PPO_Agent:
     def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-3,
                  gamma=0.99, tau=0.05, buffer_size=50000):
         self.env = env
@@ -22,7 +22,6 @@ class DQN_Agent:
 
         try:
             self.model = torch.load(self.path + "/model.pth")
-            self.target = torch.load(self.path + "/target.pth")
             print("--------------------------------\n"
                   "Models were loaded successfully! \n"
                   "--------------------------------")
@@ -30,16 +29,27 @@ class DQN_Agent:
             print("-----------------------\n"
                   "No models were loaded! \n"
                   "-----------------------")
-            self.model = Conv_DQN(map_dim, action_dim)
-            self.target = Conv_DQN(map_dim, action_dim)
+            self.model = Conv_Net(map_dim, action_dim)
+        self.old_model = Conv_Net(map_dim, action_dim)
+        self.old_model.load_state_dict(self.model.state_dict())
 
         self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
 
     def save(self):
-        torch.save(self.model, self.path + "/model.pth")
-        torch.save(self.target, self.path + "/target.pth")
+        torch.save(self.actor, self.path + "/model.pth")
+        torch.save(self.old_policy, self.path + "/target.pth")
 
     def get_action(self, map, explore=True):
+        state = torch.from_numpy(map).float()
+        action_probs = (state)
+        dist = Categorical(action_probs)
+        action = dist.sample()
+
+        memory.states.append(state)
+        memory.actions.append(action)
+        memory.logprobs.append(dist.log_prob(action))
+
+        return action.item()
 
         if np.random.rand() < self.epsilon and explore:
             return self.env.sample()
@@ -47,7 +57,7 @@ class DQN_Agent:
         self.epsilon *= self.epsilon_decay
 
         map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0)
-        qvals = self.model.forward(map).detach()
+        qvals = self.policy.forward(map).detach()
         action = np.argmax(qvals.numpy())
 
         return action
@@ -65,8 +75,8 @@ class DQN_Agent:
         rewards = rewards.view(rewards.size(0), 1)
         dones = dones.view(dones.size(0), 1)
 
-        state_action_values = self.model.forward(maps).gather(1, actions)
-        next_state_action_values = torch.max(self.target.forward(next_maps), 1)[0].unsqueeze(1).detach()
+        state_action_values = self.actor.forward(maps).gather(1, actions)
+        next_state_action_values = torch.max(self.old_policy.forward(next_maps), 1)[0].unsqueeze(1).detach()
         expected_state_action_values = rewards + (~dones) * self.gamma * next_state_action_values
         q_loss = F.mse_loss(state_action_values, expected_state_action_values)
 
@@ -80,7 +90,7 @@ class DQN_Agent:
         batch = self.memory.sample(batch_size)
         model_loss = self.loss(batch)
 
-        for target_param, param in zip(self.target.parameters(), self.model.parameters()):
+        for target_param, param in zip(self.old_policy.parameters(), self.actor.parameters()):
             target_param.data = (param.data * self.tau + target_param.data * (1.0 - self.tau)).clone()
 
         return model_loss

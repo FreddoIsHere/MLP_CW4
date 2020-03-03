@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import numpy as np
 from data_providers import DataProvider
-from dqn_agent import DQN_Agent
+from ppo_agent import DQN_Agent
 from environments import Map_Environment
 from path_generator import Path
 
