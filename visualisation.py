@@ -23,8 +23,8 @@ class Map_Object:
         data_provider = DataProvider(file)
         data = data_provider.get_map()
         self.data = np.squeeze(np.array(data))
-        self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([20, 20, 20]))
-        self.agent = DQN_Agent(self.env, (20, 20, 20), 3, 6)
+        self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([10, 10, 10]))
+        self.agent = DQN_Agent(self.env, (1, 10, 10, 10), 6)
         if self.data.ndim > 2:
             self.is_3d = True
         else:
@@ -35,17 +35,17 @@ class Map_Object:
         if self.is_3d:
             self.z = self.path[:, 2]
 
-    def predict(self, state, map, step_max=100):
+    def predict(self, state, map, step_max=20):
         path = [state]
         for step in range(step_max):
             action = self.agent.get_action(map, False)
             next_map, reward, done, _ = self.env.step(action)
 
-            if done:
-                break
-
             map = next_map
             path.append(self.env.state)
+
+            if done:
+                break
         return np.array(path)
 
     def generate_plot(self):

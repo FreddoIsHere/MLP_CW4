@@ -9,11 +9,13 @@ import numpy as np
 
 
 class DQN_Agent:
-    def __init__(self, env, map_dim, state_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=3e-4,
-                 gamma=0.99, tau=1.0, buffer_size=10000):
+    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-3,
+                 gamma=0.99, tau=0.05, buffer_size=50000):
         self.env = env
         self.learning_rate = learning_rate
         self.gamma = gamma
+        self.epsilon_decay = 0.95
+        self.epsilon = 0.9
         self.tau = tau
         self.memory = Memory(max_size=buffer_size)
         self.path = path
@@ -28,23 +30,25 @@ class DQN_Agent:
             print("-----------------------\n"
                   "No models were loaded! \n"
                   "-----------------------")
-            self.model = Conv_DQN(map_dim, state_dim, action_dim)
-            self.target = Conv_DQN(map_dim, state_dim, action_dim)
+            self.model = Conv_DQN(map_dim, action_dim)
+            self.target = Conv_DQN(map_dim, action_dim)
 
-        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=0.99)
+        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
 
     def save(self):
         torch.save(self.model, self.path + "/model.pth")
         torch.save(self.target, self.path + "/target.pth")
 
-    def get_action(self, map, explore=True, epsilon=0.1):
+    def get_action(self, map, explore=True):
 
-        if np.random.rand() < epsilon and explore:
+        if np.random.rand() < self.epsilon and explore:
             return self.env.sample()
 
+        self.epsilon *= self.epsilon_decay
+
         map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0)
-        qvals = self.model.forward(map)
-        action = np.argmax(qvals.detach().numpy())
+        qvals = self.model.forward(map).detach()
+        action = np.argmax(qvals.numpy())
 
         return action
 
@@ -66,45 +70,50 @@ class DQN_Agent:
         expected_state_action_values = rewards + (~dones) * self.gamma * next_state_action_values
         q_loss = F.mse_loss(state_action_values, expected_state_action_values)
 
+        self.model_optimizer.zero_grad()
+        q_loss.backward()
+        self.model_optimizer.step()
+
         return q_loss
 
     def train(self, batch_size):
         batch = self.memory.sample(batch_size)
         model_loss = self.loss(batch)
 
-        self.model_optimizer.zero_grad()
-        model_loss.backward()
-        self.model_optimizer.step()
-
         for target_param, param in zip(self.target.parameters(), self.model.parameters()):
             target_param.data = (param.data * self.tau + target_param.data * (1.0 - self.tau)).clone()
 
+        return model_loss
 
-def train(env, agent, num_episodes, max_steps, batch_size=64):
+
+def train(env, agent, num_episodes, max_steps, batch_size=32):
     episode_rewards = []
-
-    for e in range(num_episodes):
+    episode_losses = []
+    tqdm_e = tqdm(range(num_episodes), desc='Training', leave=True, unit="episode")
+    for e in tqdm_e:
         map = env.reset()
         episode_reward = 0
-        tqdm_s = tqdm(range(max_steps), desc='Training', leave=True, unit=" step")
-        for step in tqdm_s:
+        episode_loss = 0
+        for step in range(max_steps):
             action = agent.get_action(map)
             next_map, reward, done, _ = env.step(action)
             agent.memory.push(map, action, reward, next_map, done)
             episode_reward += reward
 
             if len(agent.memory) > batch_size:
-                agent.train(batch_size)
-
-            tqdm_s.refresh()
+                loss = agent.train(batch_size)
+                episode_loss += loss
 
             if done:
+                print("Target reached: ", episode_reward)
                 break
 
             map = next_map
 
-        print("Episode {} reward: {}".format(e, episode_reward))
+        tqdm_e.set_description("Episode {} reward: {}".format(e, episode_reward))
+        tqdm_e.refresh()
         episode_rewards.append(episode_reward)
+        episode_losses.append(episode_loss/max_steps)
 
     agent.save()
-    return episode_rewards
+    return episode_rewards, episode_losses

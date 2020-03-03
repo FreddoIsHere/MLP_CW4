@@ -6,29 +6,28 @@ import torch.autograd as autograd
 
 class Conv_DQN(nn.Module):
 
-    def __init__(self, map_dim, state_dim,  value_output_dim):
+    def __init__(self, map_dim, value_output_dim):
         super(Conv_DQN, self).__init__()
         self.map_dim = map_dim
-        self.state_dim = state_dim
         self.value_output_dim = value_output_dim
 
         self.map_net = nn.Sequential(
-            nn.Conv3d(in_channels=1, out_channels=32, kernel_size=3, stride=1),
+            nn.Conv3d(in_channels=1, out_channels=8, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv3d(32, 32, kernel_size=3, stride=1),
+            nn.Conv3d(8, 16, kernel_size=2, stride=2),
             nn.ReLU(),
-            nn.Conv3d(32, 16, kernel_size=2, stride=1),
+            nn.Conv3d(16, 8, kernel_size=2, stride=1),
             nn.ReLU()
         )
 
         self.feature_input_dim = self.feature_size()
 
         self.value_net = nn.Sequential(
-            nn.Linear(self.feature_input_dim, 32),
+            nn.Linear(self.feature_input_dim, 16),
             nn.ReLU(),
-            nn.Linear(32, 16),
+            nn.Linear(16, 8),
             nn.ReLU(),
-            nn.Linear(16, self.value_output_dim)
+            nn.Linear(8, self.value_output_dim)
         )
 
     def forward(self, map):

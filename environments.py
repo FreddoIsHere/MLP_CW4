@@ -32,7 +32,7 @@ class Map_Environment:
         #reward -= 100*obstacle_hit
         done = all(self.state == self.target)
         reward += 1000*done
-        self.map[self.state[0], self.state[1], self.state[2]] = -1
+        self.map[self.state[0], self.state[1], self.state[2]] = -100
         return self.map, reward, done, {}
 
     def execute_action(self, action):
