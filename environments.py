@@ -19,20 +19,25 @@ class Map_Environment:
         self.start_pos = start_pos
         self.state = start_pos
         self.map = self.data_provider.get_map()
-        self.map[self.state[0], self.state[1], self.state[2]] = -1
+        self.map[self.state[0], self.state[1], self.state[2]] = 100
         self.map_dim = self.map.shape
         self.target = target_pos
 
     def step(self, action):
+        #print(self.map)
         self.map[self.state[0], self.state[1], self.state[2]] = 0
         self.state = self.execute_action(action)
+        dist = np.sum(np.abs(self.state - self.target))
         reward = 0.0
-        reward -= np.sum(np.square(self.state - self.target))
+        reward -= dist
         #obstacle_hit = self.map[self.state[0], self.state[1], self.state[2]]
         #reward -= 100*obstacle_hit
-        done = all(self.state == self.target)
-        reward += 1000*done
-        self.map[self.state[0], self.state[1], self.state[2]] = -100
+        almost_done = dist < 3
+        done = dist == 0
+        reward += 10*almost_done + 30*done
+        self.map[self.state[0], self.state[1], self.state[2]] = 100
+        #print(self.state, action)
+        #print(self.map)
         return self.map, reward, done, {}
 
     def execute_action(self, action):
@@ -57,5 +62,5 @@ class Map_Environment:
     def reset(self):
         self.state = self.start_pos
         self.map = self.data_provider.get_map()
-        self.map[self.state[0], self.state[1], self.state[2]] = -1
+        self.map[self.state[0], self.state[1], self.state[2]] = 100
         return self.map

@@ -35,7 +35,7 @@ class Map_Object:
         if self.is_3d:
             self.z = self.path[:, 2]
 
-    def predict(self, state, map, step_max=20):
+    def predict(self, state, map, step_max=30):
         path = [state]
         for step in range(step_max):
             action = self.agent.get_action(map, False)

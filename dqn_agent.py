@@ -9,13 +9,13 @@ import numpy as np
 
 
 class DQN_Agent:
-    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-3,
-                 gamma=0.99, tau=0.05, buffer_size=50000):
+    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=5e-5,
+                 gamma=0.999, tau=0.5, buffer_size=50000):
         self.env = env
         self.learning_rate = learning_rate
         self.gamma = gamma
-        self.epsilon_decay = 0.95
-        self.epsilon = 0.9
+        self.epsilon_decay = 0.995
+        self.epsilon = 0.3
         self.tau = tau
         self.memory = Memory(max_size=buffer_size)
         self.path = path
@@ -33,6 +33,7 @@ class DQN_Agent:
             self.model = Conv_DQN(map_dim, action_dim)
             self.target = Conv_DQN(map_dim, action_dim)
 
+        self.update_counter = 0
         self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
 
     def save(self):
@@ -44,8 +45,6 @@ class DQN_Agent:
         if np.random.rand() < self.epsilon and explore:
             return self.env.sample()
 
-        self.epsilon *= self.epsilon_decay
-
         map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0)
         qvals = self.model.forward(map).detach()
         action = np.argmax(qvals.numpy())
@@ -55,15 +54,10 @@ class DQN_Agent:
     def loss(self, batch):
         maps, actions, rewards, next_maps, dones = batch
         maps = torch.FloatTensor(maps).unsqueeze(1)
-        actions = torch.LongTensor(actions)
-        rewards = torch.FloatTensor(rewards)
+        actions = torch.LongTensor(actions).unsqueeze(1)
+        rewards = torch.FloatTensor(rewards).unsqueeze(1)
         next_maps = torch.FloatTensor(next_maps).unsqueeze(1)
-        dones = torch.BoolTensor(dones)
-
-        # resize tensors
-        actions = actions.view(actions.size(0), 1)
-        rewards = rewards.view(rewards.size(0), 1)
-        dones = dones.view(dones.size(0), 1)
+        dones = torch.BoolTensor(dones).unsqueeze(1)
 
         state_action_values = self.model.forward(maps).gather(1, actions)
         next_state_action_values = torch.max(self.target.forward(next_maps), 1)[0].unsqueeze(1).detach()
@@ -77,11 +71,15 @@ class DQN_Agent:
         return q_loss
 
     def train(self, batch_size):
+        self.update_counter += 1
         batch = self.memory.sample(batch_size)
         model_loss = self.loss(batch)
 
-        for target_param, param in zip(self.target.parameters(), self.model.parameters()):
-            target_param.data = (param.data * self.tau + target_param.data * (1.0 - self.tau)).clone()
+        #for target_param, param in zip(self.target.parameters(), self.model.parameters()):
+            #target_param.data = (param.data * self.tau + target_param.data * (1.0 - self.tau)).clone()
+
+        if self.update_counter % 3 == 0:
+            self.target.load_state_dict(self.model.state_dict())
 
         return model_loss
 
@@ -102,7 +100,8 @@ def train(env, agent, num_episodes, max_steps, batch_size=32):
 
             if len(agent.memory) > batch_size:
                 loss = agent.train(batch_size)
-                episode_loss += loss
+                #print(loss)
+                episode_loss += loss.detach().numpy()
 
             if done:
                 print("Target reached: ", episode_reward)
@@ -110,7 +109,8 @@ def train(env, agent, num_episodes, max_steps, batch_size=32):
 
             map = next_map
 
-        tqdm_e.set_description("Episode {} reward: {}".format(e, episode_reward))
+        agent.epsilon *= agent.epsilon_decay
+        tqdm_e.set_description("Episode {} reward: {} pos: {} ep: {}".format(e, round(episode_reward), env.state, np.round(agent.epsilon, decimals=2)))
         tqdm_e.refresh()
         episode_rewards.append(episode_reward)
         episode_losses.append(episode_loss/max_steps)
