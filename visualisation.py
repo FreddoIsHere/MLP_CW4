@@ -54,8 +54,8 @@ class Map_Object:
         if self.is_3d:
             ax = fig.gca(projection='3d')
             ax.voxels(occ_grid, facecolors='blue', edgecolor='k')
-            ax.plot([-1], [-1], [-1], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
-            ax.plot([self.data.shape[0]], [self.data.shape[1]], [self.data.shape[2]], markerfacecolor='r',
+            ax.plot([0], [0], [0], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
+            ax.plot([self.data.shape[0]-1], [self.data.shape[1]-1], [self.data.shape[2]-1], markerfacecolor='r',
                     markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
             ax.plot(self.x,self.y,self.z)
         else:
