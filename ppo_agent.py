@@ -11,7 +11,7 @@ import torch.nn as nn
 
 
 class PPO_Agent:
-    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-4,
+    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=2e-4,
                  gamma=0.99, eps_clip=0.2):
         self.env = env
         self.learning_rate = learning_rate
@@ -66,7 +66,8 @@ class PPO_Agent:
         advantages = rewards - next_state_values.detach()
         surr1 = ratios * advantages
         surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
-        loss = -torch.min(surr1, surr2).mean() + 0.5 * self.loss(rewards, next_state_values) - 0.01 * next_entropy
+        policy_loss = -torch.min(surr1, surr2).mean()
+        loss = policy_loss + 0.5 * self.loss(rewards, next_state_values) - 0.001 * next_entropy
         # take gradient step
         self.optimizer.zero_grad()
         loss.mean().backward()
@@ -75,9 +76,12 @@ class PPO_Agent:
         # Copy new weights into old policy:
         self.old_policy.load_state_dict(self.policy.state_dict())
 
+        return policy_loss.detach().numpy()
+
 
 def train(env, agent, num_episodes, max_steps):
     episode_rewards = []
+    episode_losses = []
     tqdm_e = tqdm(range(num_episodes), desc='Training', leave=True, unit="episode")
     for e in tqdm_e:
         map = env.reset()
@@ -90,18 +94,19 @@ def train(env, agent, num_episodes, max_steps):
             episode_reward += reward
 
             if done:
-                print("Target reached: ", episode_reward)
+                tqdm_e.write("Target reached: {}".format(episode_reward))
                 break
 
             map = next_map
 
-        agent.update()
+        loss = agent.update()
         agent.memory.clear_memory()
 
         if (e+1) % 51 == 0:
             tqdm_e.set_description("Episode {} avg_reward: {}".format(e, np.mean(episode_rewards[-50])))
         tqdm_e.refresh()
+        episode_losses.append(loss)
         episode_rewards.append(episode_reward)
 
     agent.save()
-    return episode_rewards
+    return episode_rewards, episode_losses

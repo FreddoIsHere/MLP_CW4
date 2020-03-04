@@ -14,14 +14,16 @@ class ActorCritic_Net(nn.Module):
 
     def __init__(self, map_dim, action_output_dim):
         super(ActorCritic_Net, self).__init__()
-
+        kernel_sizes = (2, 3)
         self.conv_net = nn.Sequential(
-            nn.Conv3d(in_channels=1, out_channels=4, kernel_size=3, stride=1),
+            nn.Conv3d(in_channels=1, out_channels=4, kernel_size=kernel_sizes[0], stride=1),
             nn.ReLU(),
-            nn.Conv3d(4, 8, kernel_size=2, stride=2),
+            nn.Conv3d(4, 8, kernel_size=kernel_sizes[1], stride=1),
             nn.ReLU(),
             Flatten(),
-            nn.Linear(1*8*4*4*4, 32),
+            nn.Linear(map_dim[0]*8*(map_dim[1]-(kernel_sizes[0]-1) -(kernel_sizes[1]-1))
+                      *(map_dim[2]-(kernel_sizes[0]-1)-(kernel_sizes[1]-1))
+                      *(map_dim[3]-(kernel_sizes[0]-1)-(kernel_sizes[1]-1)), 32),
         )
 
         self.action_net = nn.Sequential(
@@ -35,10 +37,18 @@ class ActorCritic_Net(nn.Module):
             nn.Linear(32, 16),
             nn.ReLU(),
             nn.Linear(16, 1),
+            nn.Tanh()
         )
 
-    def forward(self):
-        raise NotImplementedError
+    def forward(self, map): # use for prediction without training
+        map = torch.from_numpy(map).float().unsqueeze(0)
+
+        state = self.conv_net(map.unsqueeze(0))
+        action_probs = self.action_net(state)
+        dist = Categorical(action_probs)
+        action = dist.sample()
+
+        return action.item()
 
     def act(self, map, memory):
         map = torch.from_numpy(map).float().unsqueeze(0)

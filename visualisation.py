@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import numpy as np
 from data_providers import DataProvider
-from ppo_agent import DQN_Agent
+from ppo_agent import PPO_Agent
 from environments import Map_Environment
 from path_generator import Path
 
@@ -23,8 +23,8 @@ class Map_Object:
         data_provider = DataProvider(file)
         data = data_provider.get_map()
         self.data = np.squeeze(np.array(data))
-        self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([10, 10, 10]))
-        self.agent = DQN_Agent(self.env, (1, 10, 10, 10), 6)
+        self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([9, 9, 9]))
+        self.agent = PPO_Agent(self.env, (1, 10, 10, 10), 6)
         if self.data.ndim > 2:
             self.is_3d = True
         else:
@@ -35,10 +35,10 @@ class Map_Object:
         if self.is_3d:
             self.z = self.path[:, 2]
 
-    def predict(self, state, map, step_max=20):
+    def predict(self, state, map, step_max=50):
         path = [state]
         for step in range(step_max):
-            action = self.agent.get_action(map, False)
+            action = self.agent.old_policy.forward(map)
             next_map, reward, done, _ = self.env.step(action)
 
             map = next_map
