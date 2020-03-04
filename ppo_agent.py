@@ -1,27 +1,27 @@
 import torch
-from networks import Conv_Net
+from networks import ActorCritic_Net
 from memory import Memory
 import torch.nn.functional as F
 from environments import Action
 from tqdm import tqdm
 
 import numpy as np
+from torch.distributions import Categorical
+import torch.nn as nn
 
 
 class PPO_Agent:
-    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-3,
-                 gamma=0.99, tau=0.05, buffer_size=50000):
+    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-4,
+                 gamma=0.99, eps_clip=0.2):
         self.env = env
         self.learning_rate = learning_rate
         self.gamma = gamma
-        self.epsilon_decay = 0.95
-        self.epsilon = 0.9
-        self.tau = tau
-        self.memory = Memory(max_size=buffer_size)
+        self.eps_clip = eps_clip
+        self.memory = Memory()
         self.path = path
 
         try:
-            self.model = torch.load(self.path + "/model.pth")
+            self.policy = torch.load(self.path + "/model.pth")
             print("--------------------------------\n"
                   "Models were loaded successfully! \n"
                   "--------------------------------")
@@ -29,90 +29,66 @@ class PPO_Agent:
             print("-----------------------\n"
                   "No models were loaded! \n"
                   "-----------------------")
-            self.model = Conv_Net(map_dim, action_dim)
-        self.old_model = Conv_Net(map_dim, action_dim)
-        self.old_model.load_state_dict(self.model.state_dict())
+            self.policy = ActorCritic_Net(map_dim, action_dim)
 
-        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
+        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
+        self.old_policy = ActorCritic_Net(map_dim, action_dim)
+        self.old_policy.load_state_dict(self.policy.state_dict())
+        self.loss = nn.MSELoss()
 
     def save(self):
-        torch.save(self.actor, self.path + "/model.pth")
-        torch.save(self.old_policy, self.path + "/target.pth")
+        torch.save(self.policy, self.path + "/model.pth")
 
-    def get_action(self, map, explore=True):
-        state = torch.from_numpy(map).float()
-        action_probs = (state)
-        dist = Categorical(action_probs)
-        action = dist.sample()
+    def update(self):
+        # Monte Carlo estimate of state rewards:
+        rewards = []
+        discounted_reward = 0
+        for reward, done in zip(reversed(self.memory.rewards), reversed(self.memory.dones)):
+            discounted_reward = reward + (~done)*self.gamma * discounted_reward
+            rewards.insert(0, discounted_reward)
 
-        memory.states.append(state)
-        memory.actions.append(action)
-        memory.logprobs.append(dist.log_prob(action))
-
-        return action.item()
-
-        if np.random.rand() < self.epsilon and explore:
-            return self.env.sample()
-
-        self.epsilon *= self.epsilon_decay
-
-        map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0)
-        qvals = self.policy.forward(map).detach()
-        action = np.argmax(qvals.numpy())
-
-        return action
-
-    def loss(self, batch):
-        maps, actions, rewards, next_maps, dones = batch
-        maps = torch.FloatTensor(maps).unsqueeze(1)
-        actions = torch.LongTensor(actions)
+        # Normalizing the rewards:
         rewards = torch.FloatTensor(rewards)
-        next_maps = torch.FloatTensor(next_maps).unsqueeze(1)
-        dones = torch.BoolTensor(dones)
+        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
 
-        # resize tensors
-        actions = actions.view(actions.size(0), 1)
-        rewards = rewards.view(rewards.size(0), 1)
-        dones = dones.view(dones.size(0), 1)
+        # convert list to tensor
+        maps = torch.stack(self.memory.maps).detach()
+        actions = torch.LongTensor(self.memory.actions).detach()
+        logprobs = torch.FloatTensor(self.memory.logprobs).detach()
 
-        state_action_values = self.actor.forward(maps).gather(1, actions)
-        next_state_action_values = torch.max(self.old_policy.forward(next_maps), 1)[0].unsqueeze(1).detach()
-        expected_state_action_values = rewards + (~dones) * self.gamma * next_state_action_values
-        q_loss = F.mse_loss(state_action_values, expected_state_action_values)
+        # Evaluating old actions and values :
+        next_logprobs, next_state_values, next_dist_entropy = self.policy.evaluate(maps, actions)
 
-        self.model_optimizer.zero_grad()
-        q_loss.backward()
-        self.model_optimizer.step()
+        # Finding the ratio (pi_theta / pi_theta__old):
+        ratios = torch.exp(next_logprobs - logprobs.detach())
 
-        return q_loss
+        # Finding Surrogate Loss:
+        advantages = rewards - next_state_values.detach()
+        surr1 = ratios * advantages
+        surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
+        loss = -torch.min(surr1, surr2).mean() + 0.5 * self.loss(next_state_values, rewards) - 0.01 * next_dist_entropy
 
-    def train(self, batch_size):
-        batch = self.memory.sample(batch_size)
-        model_loss = self.loss(batch)
+        # take gradient step
+        self.optimizer.zero_grad()
+        loss.mean().backward()
+        self.optimizer.step()
 
-        for target_param, param in zip(self.old_policy.parameters(), self.actor.parameters()):
-            target_param.data = (param.data * self.tau + target_param.data * (1.0 - self.tau)).clone()
-
-        return model_loss
+        # Copy new weights into old policy:
+        self.old_policy.load_state_dict(self.policy.state_dict())
 
 
-def train(env, agent, num_episodes, max_steps, batch_size=32):
+def train(env, agent, num_episodes, max_steps):
     episode_rewards = []
-    episode_losses = []
     tqdm_e = tqdm(range(num_episodes), desc='Training', leave=True, unit="episode")
     for e in tqdm_e:
         map = env.reset()
         episode_reward = 0
-        episode_loss = 0
         for step in range(max_steps):
-            action = agent.get_action(map)
+            action = agent.old_policy.act(map, agent.memory)
             next_map, reward, done, _ = env.step(action)
-            agent.memory.push(map, action, reward, next_map, done)
+            agent.memory.rewards.append(reward)
+            agent.memory.dones.append(done)
             episode_reward += reward
-
-            if len(agent.memory) > batch_size:
-                loss = agent.train(batch_size)
-                episode_loss += loss
 
             if done:
                 print("Target reached: ", episode_reward)
@@ -120,10 +96,13 @@ def train(env, agent, num_episodes, max_steps, batch_size=32):
 
             map = next_map
 
-        tqdm_e.set_description("Episode {} reward: {}".format(e, episode_reward))
+        agent.update()
+        agent.memory.clear_memory()
+
+        if (e+1) % 51 == 0:
+            tqdm_e.set_description("Episode {} avg_reward: {}".format(e, np.mean(episode_rewards[-50])))
         tqdm_e.refresh()
         episode_rewards.append(episode_reward)
-        episode_losses.append(episode_loss/max_steps)
 
     agent.save()
-    return episode_rewards, episode_losses
+    return episode_rewards

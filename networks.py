@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.autograd as autograd
+from torch.distributions import Categorical
 
 
 class Flatten(nn.Module):
@@ -9,36 +10,57 @@ class Flatten(nn.Module):
         return x.view(x.size(0), -1)
 
 
-class Conv_Net(nn.Module):
+class ActorCritic_Net(nn.Module):
 
     def __init__(self, map_dim, action_output_dim):
-        super(Conv_Net, self).__init__()
-        self.map_dim = map_dim
-        self.action_output_dim = action_output_dim
+        super(ActorCritic_Net, self).__init__()
 
-        self.action_net = nn.Sequential(
-            nn.Conv3d(in_channels=1, out_channels=16, kernel_size=3, stride=1),
+        self.conv_net = nn.Sequential(
+            nn.Conv3d(in_channels=1, out_channels=4, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv3d(16, 8, kernel_size=2, stride=1),
+            nn.Conv3d(4, 8, kernel_size=2, stride=2),
             nn.ReLU(),
             Flatten(),
-            nn.Linear(8 * self.map_dim[0] * self.map_dim[1] * self.map_dim[2], 32),
+            nn.Linear(1*8*4*4*4, 32),
+        )
+
+        self.action_net = nn.Sequential(
+            nn.Linear(32, 16),
             nn.ReLU(),
-            nn.Linear(32, self.action_output_dim),
-            nn.Softmax(dim=-1)
+            nn.Linear(16, action_output_dim),
+            nn.Softmax(dim=1)
         )
 
         self.value_net = nn.Sequential(
-            nn.Conv3d(in_channels=1, out_channels=16, kernel_size=3, stride=1),
+            nn.Linear(32, 16),
             nn.ReLU(),
-            nn.Conv3d(16, 8, kernel_size=2, stride=1),
-            nn.ReLU(),
-            Flatten(),
-            nn.Linear(8 * self.map_dim[0] * self.map_dim[1] * self.map_dim[2], 32),
-            nn.ReLU(),
-            nn.Linear(32, self.action_output_dim),
+            nn.Linear(16, 1),
         )
 
-    def forward(self, map):
-        probs, values = self.action_net(map), self.value_net(map)
-        return probs, values
+    def forward(self):
+        raise NotImplementedError
+
+    def act(self, map, memory):
+        map = torch.from_numpy(map).float().unsqueeze(0)
+        memory.maps.append(map)
+
+        state = self.conv_net(map.unsqueeze(0))
+        action_probs = self.action_net(state)
+        dist = Categorical(action_probs)
+        action = dist.sample()
+        memory.actions.append(action)
+        memory.logprobs.append(dist.log_prob(action))
+
+        return action.item()
+
+    def evaluate(self, maps, actions):
+        states = self.conv_net(maps)
+        action_probs = self.action_net(states)
+        dist = Categorical(action_probs)
+        action_logprobs = dist.log_prob(actions)
+        dist_entropies = dist.entropy()
+
+        state_values = self.value_net(states)
+
+        return action_logprobs, torch.squeeze(state_values), dist_entropies
+
