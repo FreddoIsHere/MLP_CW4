@@ -57,10 +57,10 @@ class ActorCritic_Net(nn.Module):
         states = self.conv_net(maps)
         action_probs = self.action_net(states)
         dist = Categorical(action_probs)
-        action_logprobs = dist.log_prob(actions)
-        dist_entropies = dist.entropy()
+        action_logprobs = dist.log_prob(torch.squeeze(actions)).unsqueeze(1)
+        dist_entropy = dist.entropy().sum(-1).mean()
 
         state_values = self.value_net(states)
 
-        return action_logprobs, torch.squeeze(state_values), dist_entropies
+        return action_logprobs, state_values, dist_entropy
 

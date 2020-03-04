@@ -31,7 +31,7 @@ class PPO_Agent:
                   "-----------------------")
             self.policy = ActorCritic_Net(map_dim, action_dim)
 
-        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
+        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=learning_rate)
         self.old_policy = ActorCritic_Net(map_dim, action_dim)
         self.old_policy.load_state_dict(self.policy.state_dict())
         self.loss = nn.MSELoss()
@@ -48,16 +48,16 @@ class PPO_Agent:
             rewards.insert(0, discounted_reward)
 
         # Normalizing the rewards:
-        rewards = torch.FloatTensor(rewards)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
+        rewards = torch.FloatTensor(rewards).unsqueeze(1)
+        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-10)
 
         # convert list to tensor
         maps = torch.stack(self.memory.maps).detach()
-        actions = torch.LongTensor(self.memory.actions).detach()
-        logprobs = torch.FloatTensor(self.memory.logprobs).detach()
+        actions = torch.LongTensor(self.memory.actions).unsqueeze(1).detach()
+        logprobs = torch.FloatTensor(self.memory.logprobs).unsqueeze(1).detach()
 
         # Evaluating old actions and values :
-        next_logprobs, next_state_values, next_dist_entropy = self.policy.evaluate(maps, actions)
+        next_logprobs, next_state_values, next_entropy = self.policy.evaluate(maps, actions)
 
         # Finding the ratio (pi_theta / pi_theta__old):
         ratios = torch.exp(next_logprobs - logprobs.detach())
@@ -66,8 +66,7 @@ class PPO_Agent:
         advantages = rewards - next_state_values.detach()
         surr1 = ratios * advantages
         surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
-        loss = -torch.min(surr1, surr2).mean() + 0.5 * self.loss(next_state_values, rewards) - 0.01 * next_dist_entropy
-
+        loss = -torch.min(surr1, surr2).mean() + 0.5 * self.loss(rewards, next_state_values) - 0.01 * next_entropy
         # take gradient step
         self.optimizer.zero_grad()
         loss.mean().backward()
