@@ -22,6 +22,8 @@ class Map_Object:
     def __init__(self, file):
         data_provider = DataProvider(file)
         data = data_provider.get_map()
+        for i in range(np.random.randint(low=0, high=100)):
+            data = data_provider.get_map()
         self.data = np.squeeze(np.array(data))
         self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([9, 9, 9]))
         self.agent = PPO_Agent(self.env, (1, 10, 10, 10), 6)
@@ -29,11 +31,11 @@ class Map_Object:
             self.is_3d = True
         else:
             self.is_3d = False
-        self.path = self.predict(np.array([0, 0, 0]), data) # Path(data).generate_path()
-        self.x = self.path[:, 0]
-        self.y = self.path[:, 1]
+        self.path = self.predict(np.array([0, 0, 0]), data)  # Path(data).generate_path()
+        self.x = self.path[:, 0] + 0.5
+        self.y = self.path[:, 1] + 0.5
         if self.is_3d:
-            self.z = self.path[:, 2]
+            self.z = self.path[:, 2] + 0.5
 
     def predict(self, state, map, step_max=50):
         path = [state]
@@ -54,10 +56,10 @@ class Map_Object:
         if self.is_3d:
             ax = fig.gca(projection='3d')
             ax.voxels(occ_grid, facecolors='blue', edgecolor='k')
-            ax.plot([0], [0], [0], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
-            ax.plot([self.data.shape[0]-1], [self.data.shape[1]-1], [self.data.shape[2]-1], markerfacecolor='r',
+            ax.plot([0.5], [0.5], [0.5], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
+            ax.plot([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], markerfacecolor='r',
                     markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
-            ax.plot(self.x,self.y,self.z)
+            ax.plot(self.x, self.y, self.z)
         else:
             cmap = colors.ListedColormap(['white', 'blue'])
             plt.figure(figsize=(6, 6))
@@ -67,6 +69,7 @@ class Map_Object:
             plt.scatter(self.data.shape[0], self.data.shape[1], s=100, c='r', marker='o')
             plt.plot(self.x, self.y)
         plt.show()
+
 
 occ = Map_Object("maps")
 occ.generate_plot()

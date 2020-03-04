@@ -82,6 +82,7 @@ class PPO_Agent:
 def train(env, agent, num_episodes, max_steps):
     episode_rewards = []
     episode_losses = []
+    target_reached = 0
     tqdm_e = tqdm(range(num_episodes), desc='Training', leave=True, unit="episode")
     for e in tqdm_e:
         map = env.reset()
@@ -94,7 +95,7 @@ def train(env, agent, num_episodes, max_steps):
             episode_reward += reward
 
             if done:
-                tqdm_e.write("Target reached: {}".format(episode_reward))
+                target_reached += 1
                 break
 
             map = next_map
@@ -103,7 +104,7 @@ def train(env, agent, num_episodes, max_steps):
         agent.memory.clear_memory()
 
         if (e+1) % 51 == 0:
-            tqdm_e.set_description("Episode {} avg_reward: {}".format(e, np.mean(episode_rewards[-50])))
+            tqdm_e.set_description("Epi {} avg_r: {} Reached: {}".format(e, np.mean(episode_rewards[-50]), target_reached))
         tqdm_e.refresh()
         episode_losses.append(loss)
         episode_rewards.append(episode_reward)

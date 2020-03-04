@@ -28,8 +28,6 @@ class Map_Environment:
         self.map[self.state[0], self.state[1], self.state[2]] = 0
         self.state, reward = self.execute_action(action)
         reward -= np.sum(np.abs(self.state - self.target))
-        #obstacle_hit = self.map[self.state[0], self.state[1], self.state[2]]
-        #reward -= 100*obstacle_hit
         done = all(self.state == self.target)
         reward += 100*done
         self.map[self.state[0], self.state[1], self.state[2]] = -10
@@ -44,12 +42,12 @@ class Map_Environment:
             Action.Z.value[0]: self.state + np.array([0, 0, 1]),
             Action.minus_Z.value[0]: self.state + np.array([0, 0, -1])
         }[action]
-        mask = state < 0
-        mask2 = state > self.map_dim[0]-1
-        state[mask] = 0
-        state[mask2] = self.map_dim[0]-1
-        wall_hit = any(mask) or any(mask2)
-        return state, -3*wall_hit
+        lower_bound = state < 0
+        upper_bound = state > self.map_dim[0]-1
+        obstacle_hit = self.map[self.state[0], self.state[1], self.state[2]] == 1
+        if any(lower_bound) or any(upper_bound) or obstacle_hit:
+            return self.state, -100
+        return state, 0
 
     def sample(self):
         idx = np.random.randint(low=0, high=len(Action))
