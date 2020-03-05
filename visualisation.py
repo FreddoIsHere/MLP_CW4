@@ -31,11 +31,15 @@ class Map_Object:
             self.is_3d = True
         else:
             self.is_3d = False
-        self.path = self.predict(np.array([0, 0, 0]), data)  # Path(data).generate_path()
-        self.x = self.path[:, 0] + 0.5
-        self.y = self.path[:, 1] + 0.5
+        self.predicted_path = self.predict(np.array([0, 0, 0]), data)  # Path(data).generate_path()
+        self.optimal_path = Path(data).generate_path()
+        self.predicted_x = self.predicted_path[:, 0] + 0.5
+        self.predicted_y = self.predicted_path[:, 1] + 0.5
+        self.optimal_x = self.optimal_path[:, 0] + 0.5
+        self.optimal_y = self.optimal_path[:, 1] + 0.5
         if self.is_3d:
-            self.z = self.path[:, 2] + 0.5
+            self.predicted_z = self.predicted_path[:, 2] + 0.5
+            self.optimal_z = self.optimal_path[:, 2] + 0.5
 
     def predict(self, state, map, step_max=50):
         path = [state]
@@ -55,19 +59,20 @@ class Map_Object:
         fig = plt.figure()
         if self.is_3d:
             ax = fig.gca(projection='3d')
-            ax.voxels(occ_grid, facecolors='blue', edgecolor='k')
+            ax.plot(self.predicted_x, self.predicted_y, self.predicted_z, color='g', linewidth=4)
+            ax.plot(self.optimal_x, self.optimal_y, self.optimal_z, color='r', linewidth=4)
+            ax.voxels(occ_grid, facecolors='blue', alpha=0.9)
             ax.plot([0.5], [0.5], [0.5], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
             ax.plot([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], markerfacecolor='r',
                     markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
-            ax.plot(self.x, self.y, self.z)
         else:
             cmap = colors.ListedColormap(['white', 'blue'])
             plt.figure(figsize=(6, 6))
+            plt.plot(self.predicted_x, self.predicted_y, linewidth=4)
             plt.pcolor(self.data, cmap=cmap, edgecolors='k', linewidths=1)
             # Start and End markers arbitraily assigned to origin and futherest point
             plt.scatter(0, 0, s=100, c='g', marker='o')
             plt.scatter(self.data.shape[0], self.data.shape[1], s=100, c='r', marker='o')
-            plt.plot(self.x, self.y)
         plt.show()
 
 

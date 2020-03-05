@@ -37,8 +37,8 @@ class Path:
         if self.is_3d == True:
             self.source = (0,0,0)
             self.target = (self.data.shape[0]-1, self.data.shape[1]-1, self.data.shape[2]-1)
+            print(self.target)
             path = dijkstra3d.dijkstra(self.data, self.source, self.target, compass=compass)
-            path = np.append(path,[[self.data.shape[0],self.data.shape[1],self.data.shape[2]]],axis=0)
         else:
             self.data = 1-self.data
             self.grid = Grid(matrix=self.data)
@@ -49,3 +49,37 @@ class Path:
             path = np.append(path,[[self.data.shape[0],self.data.shape[1]]], axis=0)
             
         return path
+
+    def remove_diags(self, path):
+
+        new_p = np.zeros((1, self.data.ndim))
+        p = list(path)
+        for index, point in enumerate(p):
+            if index < len(p) - 1:
+                a = p[index]
+                b = p[index + 1]
+                if np.array(np.not_equal(np.array(a), np.array(b))).sum() > 1:
+                    # print("point " +str(index)+" to "+ str(index+1)+" is diagonal")
+                    pos = np.array(np.where(np.not_equal(np.array(b), np.array(a))))
+                    # print(pos)
+                    newp = point
+
+                    for i in pos.T:
+
+                        if b[i] > a[i]:
+                            newp[i] += 1
+                        else:
+                            newp[i] -= 1
+                        newp = np.array(newp)
+                        if self.is_3d == True:
+                            new_p = np.append(new_p, [[newp[0], newp[1], newp[2]]], axis=0)
+                        else:
+                            new_p = np.append(new_p, [[newp[0], newp[1]]], axis=0)
+                        # print(newp)
+
+                else:
+                    #  print("point " +str(index)+" to "+ str(index+1)+" is NOT diagonal")
+                    new_p = np.append(new_p, [np.array(point)], axis=0)
+        # print(len(new_p))
+
+        return new_p
