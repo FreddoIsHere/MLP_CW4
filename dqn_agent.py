@@ -19,6 +19,8 @@ class DQN_Agent:
         self.tau = tau
         self.memory = Memory(max_size=buffer_size)
         self.path = path
+        self.use_cuda = torch.cuda.is_available()
+        self.device = torch.device("cuda" if self.use_cuda else "cpu")
 
         try:
             self.model = torch.load(self.path + "/model.pth")
@@ -30,8 +32,8 @@ class DQN_Agent:
             print("-----------------------\n"
                   "No models were loaded! \n"
                   "-----------------------")
-            self.model = Conv_DQN(map_dim, action_dim)
-            self.target = Conv_DQN(map_dim, action_dim)
+            self.model = Conv_DQN(map_dim, action_dim).to(self.device)
+            self.target = Conv_DQN(map_dim, action_dim).to(self.device)
 
         self.update_counter = 0
         self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate, eps=1e-3, weight_decay=0.999)
@@ -45,19 +47,20 @@ class DQN_Agent:
         if np.random.rand() < self.epsilon and explore:
             return self.env.sample()
 
-        map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0)
-        qvals = self.model.forward(map).detach()
-        action = np.argmax(qvals.numpy())
-
+        map = torch.FloatTensor(map).unsqueeze(0).unsqueeze(0).to(self.device)
+        qvals = self.model.forward(map).detach().to(self.device)
+        #action = np.argmax(qvals.numpy())
+        action = qvals.cpu().numpy().argmax()
+        
         return action
 
     def loss(self, batch):
         maps, actions, rewards, next_maps, dones = batch
-        maps = torch.FloatTensor(maps).unsqueeze(1)
-        actions = torch.LongTensor(actions).unsqueeze(1)
-        rewards = torch.FloatTensor(rewards).unsqueeze(1)
-        next_maps = torch.FloatTensor(next_maps).unsqueeze(1)
-        dones = torch.BoolTensor(dones).unsqueeze(1)
+        maps = torch.FloatTensor(maps).unsqueeze(1).to(self.device)
+        actions = torch.LongTensor(actions).unsqueeze(1).to(self.device)
+        rewards = torch.FloatTensor(rewards).unsqueeze(1).to(self.device)
+        next_maps = torch.FloatTensor(next_maps).unsqueeze(1).to(self.device)
+        dones = torch.BoolTensor(dones).unsqueeze(1).to(self.device)
 
         state_action_values = self.model.forward(maps).gather(1, actions)
         next_state_action_values = torch.max(self.target.forward(next_maps), 1)[0].unsqueeze(1).detach()
@@ -101,7 +104,8 @@ def train(env, agent, num_episodes, max_steps, batch_size=32):
             if len(agent.memory) > batch_size:
                 loss = agent.train(batch_size)
                 #print(loss)
-                episode_loss += loss.detach().numpy()
+                #episode_loss += loss.detach().numpy()
+                episode_loss += loss.detach().cpu().numpy()
 
             if done:
                 print("Target reached: ", episode_reward)
