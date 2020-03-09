@@ -20,11 +20,12 @@ class Action(enum.Enum):
 
 class Map_Environment:
 
-    def __init__(self, file, start_pos, target_pos):
-        self.data_provider = DataProvider(file)
+    def __init__(self, map_file, path_file, start_pos, target_pos):
+        self.data_provider = DataProvider(map_file, path_file)
         self.start_pos = start_pos
         self.state = start_pos
-        self.map = self.data_provider.get_map()
+        self.map, path = self.data_provider.get_map()
+        self.path = path[1:]
         self.map[self.state[0], self.state[1], self.state[2]] = -10
         self.map_dim = self.map.shape
         self.target = target_pos
@@ -34,8 +35,9 @@ class Map_Environment:
         self.map[self.state[0], self.state[1], self.state[2]] = 0
         self.state, reward = self.execute_action(action)
         reward *= np.sum(np.square(self.state - self.target))
+        on_path = (self.state in self.path)
         done = all(self.state == self.target)
-        reward += 100*done
+        reward += 100*done + 50*on_path
         self.map[self.state[0], self.state[1], self.state[2]] = -10
         return self.map, reward, done, {}
 
@@ -58,7 +60,7 @@ class Map_Environment:
         upper_bound = state > self.map_dim[0]-1
         obstacle_hit = self.map[self.state[0], self.state[1], self.state[2]] == 1
         if any(lower_bound) or any(upper_bound) or obstacle_hit:
-            return self.state, -5
+            return self.state, -7
         return state, -1
 
     def sample(self):
@@ -67,7 +69,8 @@ class Map_Environment:
 
     def reset(self):
         self.state = self.start_pos
-        self.map = self.data_provider.get_map()
+        self.map, path = self.data_provider.get_map()
+        self.path = path[1:]
         self.map[self.state[0], self.state[1], self.state[2]] = -10
         self.map[self.target[0], self.target[1], self.target[2]] = -100
         return self.map

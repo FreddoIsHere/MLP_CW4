@@ -104,7 +104,7 @@ def train(env, agent, num_episodes, max_steps):
         agent.memory.clear_memory()
 
         if (e+1) % 51 == 0:
-            tqdm_e.set_description("Epi {} avg_r: {} Reached: {}".format(e, np.mean(episode_rewards[-50]), target_reached))
+            tqdm_e.set_description("Epi {} avg_r: {} Reached: {}".format(e, round(np.mean(episode_rewards[-50])), target_reached))
             target_reached = 0
         tqdm_e.refresh()
         episode_losses.append(loss)

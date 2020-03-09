@@ -19,20 +19,19 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 
 
 class Map_Object:
-    def __init__(self, file):
-        data_provider = DataProvider(file)
-        data = data_provider.get_map()
+    def __init__(self, map_file, path_file):
+        data_provider = DataProvider(map_file, path_file)
+        data, self.optimal_path = data_provider.get_map()
         for i in range(np.random.randint(low=0, high=100)):
-            data = data_provider.get_map()
+            data, self.optimal_path = data_provider.get_map()
         self.data = np.squeeze(np.array(data))
-        self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([9, 9, 9]))
+        self.env = Map_Environment(map_file, path_file, np.array([0, 0, 0]), np.array([9, 9, 9]))
         self.agent = PPO_Agent(self.env, (1, 10, 10, 10), 12)
         if self.data.ndim > 2:
             self.is_3d = True
         else:
             self.is_3d = False
         self.predicted_path = self.predict(np.array([0, 0, 0]), data)  # Path(data).generate_path()
-        self.optimal_path = Path(data).generate_path()
         self.predicted_x = self.predicted_path[:, 0] + 0.5
         self.predicted_y = self.predicted_path[:, 1] + 0.5
         self.optimal_x = self.optimal_path[:, 0] + 0.5
@@ -76,5 +75,5 @@ class Map_Object:
         plt.show()
 
 
-occ = Map_Object("maps")
+occ = Map_Object("maps", "paths")
 occ.generate_plot()
