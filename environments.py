@@ -10,6 +10,12 @@ class Action(enum.Enum):
     minus_Y = 3,
     Z = 4,
     minus_Z = 5,
+    XY = 6,
+    minus_XY = 7,
+    XZ = 8,
+    minus_XZ = 9,
+    YZ = 10,
+    minus_YZ = 11,
 
 
 class Map_Environment:
@@ -27,7 +33,7 @@ class Map_Environment:
     def step(self, action):
         self.map[self.state[0], self.state[1], self.state[2]] = 0
         self.state, reward = self.execute_action(action)
-        reward -= np.sum(np.abs(self.state - self.target))
+        reward *= np.sum(np.square(self.state - self.target))
         done = all(self.state == self.target)
         reward += 100*done
         self.map[self.state[0], self.state[1], self.state[2]] = -10
@@ -40,14 +46,20 @@ class Map_Environment:
             Action.Y.value[0]: self.state + np.array([0, 1, 0]),
             Action.minus_Y.value[0]: self.state + np.array([0, -1, 0]),
             Action.Z.value[0]: self.state + np.array([0, 0, 1]),
-            Action.minus_Z.value[0]: self.state + np.array([0, 0, -1])
+            Action.minus_Z.value[0]: self.state + np.array([0, 0, -1]),
+            Action.XY.value[0]: self.state + np.array([1, 1, 0]),
+            Action.minus_XY.value[0]: self.state + np.array([-1, -1, 0]),
+            Action.XZ.value[0]: self.state + np.array([1, 0, 1]),
+            Action.minus_XZ.value[0]: self.state + np.array([-1, 0, -1]),
+            Action.YZ.value[0]: self.state + np.array([0, 1, 1]),
+            Action.minus_YZ.value[0]: self.state + np.array([0, -1, -1])
         }[action]
         lower_bound = state < 0
         upper_bound = state > self.map_dim[0]-1
         obstacle_hit = self.map[self.state[0], self.state[1], self.state[2]] == 1
         if any(lower_bound) or any(upper_bound) or obstacle_hit:
-            return self.state, -100
-        return state, 0
+            return self.state, -5
+        return state, -1
 
     def sample(self):
         idx = np.random.randint(low=0, high=len(Action))

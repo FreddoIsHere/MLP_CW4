@@ -13,7 +13,7 @@ parser.add_argument('--path', nargs="?", type=str, default=os.path.abspath(os.ge
 args = parser.parse_args()
 
 env = Map_Environment(args.file, np.array([0, 0, 0]), np.array([9, 9, 9]))
-agent = PPO_Agent(env, (1, 10, 10, 10), 6, path=args.path)
+agent = PPO_Agent(env, (1, 10, 10, 10), 12, path=args.path)
 rewards, losses = train(env, agent, args.num_episodes, args.max_steps)
 plt.plot(rewards)
 plt.plot(np.convolve(rewards, (1/50)*np.ones(50), mode='valid'))

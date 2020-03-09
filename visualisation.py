@@ -26,7 +26,7 @@ class Map_Object:
             data = data_provider.get_map()
         self.data = np.squeeze(np.array(data))
         self.env = Map_Environment(file, np.array([0, 0, 0]), np.array([9, 9, 9]))
-        self.agent = PPO_Agent(self.env, (1, 10, 10, 10), 6)
+        self.agent = PPO_Agent(self.env, (1, 10, 10, 10), 12)
         if self.data.ndim > 2:
             self.is_3d = True
         else:
@@ -61,7 +61,7 @@ class Map_Object:
             ax = fig.gca(projection='3d')
             ax.plot(self.predicted_x, self.predicted_y, self.predicted_z, color='g', linewidth=4)
             ax.plot(self.optimal_x, self.optimal_y, self.optimal_z, color='r', linewidth=4)
-            ax.voxels(occ_grid, facecolors='blue', alpha=0.9)
+            ax.voxels(occ_grid, facecolors='blue', alpha=0.75)
             ax.plot([0.5], [0.5], [0.5], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
             ax.plot([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], markerfacecolor='r',
                     markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
