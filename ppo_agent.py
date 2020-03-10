@@ -20,8 +20,11 @@ class PPO_Agent:
         self.memory = Memory()
         self.path = path
 
+        self.use_cuda = torch.cuda.is_available()
+        self.device = torch.device("cuda" if self.use_cuda else "cpu")
+
         try:
-            self.policy = torch.load(self.path + "/model.pth")
+            self.policy = torch.load(self.path + "/model.pth").to(self.device)
             print("--------------------------------\n"
                   "Models were loaded successfully! \n"
                   "--------------------------------")
@@ -29,10 +32,10 @@ class PPO_Agent:
             print("-----------------------\n"
                   "No models were loaded! \n"
                   "-----------------------")
-            self.policy = ActorCritic_Net(map_dim, action_dim)
+            self.policy = ActorCritic_Net(map_dim, action_dim).to(self.device)
 
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=learning_rate)
-        self.old_policy = ActorCritic_Net(map_dim, action_dim)
+        self.old_policy = ActorCritic_Net(map_dim, action_dim).to(self.device)
         self.old_policy.load_state_dict(self.policy.state_dict())
         self.loss = nn.MSELoss()
 
@@ -48,13 +51,13 @@ class PPO_Agent:
             rewards.insert(0, discounted_reward)
 
         # Normalizing the rewards:
-        rewards = torch.FloatTensor(rewards).unsqueeze(1)
+        rewards = torch.FloatTensor(rewards).unsqueeze(1).to(self.device)
         rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-10)
 
         # convert list to tensor
-        maps = torch.stack(self.memory.maps).detach()
-        actions = torch.LongTensor(self.memory.actions).unsqueeze(1).detach()
-        logprobs = torch.FloatTensor(self.memory.logprobs).unsqueeze(1).detach()
+        maps = torch.stack(self.memory.maps).detach().to(self.device)
+        actions = torch.LongTensor(self.memory.actions).unsqueeze(1).detach().to(self.device)
+        logprobs = torch.FloatTensor(self.memory.logprobs).unsqueeze(1).detach().to(self.device)
 
         # Evaluating old actions and values :
         next_logprobs, next_state_values, next_entropy = self.policy.evaluate(maps, actions)
@@ -76,7 +79,7 @@ class PPO_Agent:
         # Copy new weights into old policy:
         self.old_policy.load_state_dict(self.policy.state_dict())
 
-        return policy_loss.detach().numpy()
+        return policy_loss.detach().cpu().numpy()
 
 
 def train(env, agent, num_episodes, max_steps):
