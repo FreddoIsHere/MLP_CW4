@@ -8,6 +8,9 @@ Created on Sat Feb  1 14:44:24 2020
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
+
+from mayavi import mlab 
+
 import numpy as np
 from data_providers import DataProvider
 from ppo_agent import PPO_Agent
@@ -55,16 +58,23 @@ class Map_Object:
 
     def generate_plot(self):
         occ_grid = self.data
-        fig = plt.figure()
+        
         if self.is_3d:
-            ax = fig.gca(projection='3d')
-            ax.plot(self.predicted_x, self.predicted_y, self.predicted_z, color='g', linewidth=4)
-            ax.plot(self.optimal_x, self.optimal_y, self.optimal_z, color='r', linewidth=4)
-            ax.voxels(occ_grid, facecolors='blue', alpha=0.75)
-            ax.plot([0.5], [0.5], [0.5], markerfacecolor='g', markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
-            ax.plot([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], markerfacecolor='r',
-                    markeredgecolor='k', marker='o', markersize=5, alpha=1.0)
+            fig = mlab.figure()
+            xx, yy, zz = np.where(self.data == 1)
+            mlab.plot3d(self.predicted_x, self.predicted_y, self.predicted_z, color=(0,1,0))
+            mlab.plot3d(self.optimal_x, self.optimal_y, self.optimal_z, color=(1,0,0))
+            mlab.points3d(xx, yy, zz, mode="cube", color=(0, 0, 1), scale_factor=1)
+            mlab.points3d([0.5], [0.5], [0.5], mode='sphere', color=(0, 1, 0), scale_factor=0.5)
+            mlab.points3d([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], mode='sphere', color=(1, 0, 0), scale_factor=0.5)
+            mlab.colorbar(title='title', orientation='horizontal', nb_labels=['1', '2'], nb_colors=[(0,0,1), (0,1,0)])
+
+            f = mlab.gcf()
+            f.scene.camera.azimuth(16)
+
+            mlab.show()
         else:
+            fig = plt.figure()
             cmap = colors.ListedColormap(['white', 'blue'])
             plt.figure(figsize=(6, 6))
             plt.plot(self.predicted_x, self.predicted_y, linewidth=4)
@@ -72,7 +82,7 @@ class Map_Object:
             # Start and End markers arbitraily assigned to origin and futherest point
             plt.scatter(0, 0, s=100, c='g', marker='o')
             plt.scatter(self.data.shape[0], self.data.shape[1], s=100, c='r', marker='o')
-        plt.show()
+            plt.show()
 
 
 occ = Map_Object("maps", "paths")
