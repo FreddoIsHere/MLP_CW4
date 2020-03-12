@@ -37,7 +37,6 @@ class Path:
         if self.is_3d == True:
             self.source = (0,0,0)
             self.target = (self.data.shape[0]-1, self.data.shape[1]-1, self.data.shape[2]-1)
-            print(self.target)
             path = dijkstra3d.dijkstra(self.data, self.source, self.target, compass=compass)
         else:
             self.data = 1-self.data
