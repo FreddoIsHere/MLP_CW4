@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-
+import argparse
 import numpy as np
 from copy import copy
 from ppo_agent import PPO_Agent
@@ -10,8 +7,8 @@ from mayavi import mlab
 
 
 class Map_Object:
-    def __init__(self, map_file, path_file):
-        self.num_particles = 2
+    def __init__(self, num_particles, map_file, path_file):
+        self.num_particles = num_particles
         self.env = Map_Environment(self.num_particles, map_file, path_file, np.zeros(3), np.array([9, 9, 9]))
         self.data = np.squeeze(np.array(copy(self.env.map)))
         self.optimal_path = np.vstack(([0, 0, 0], self.env.path))
@@ -44,15 +41,21 @@ class Map_Object:
         xx, yy, zz = np.where(self.data == 1)
         mlab.points3d(xx, yy, zz, mode="cube", color=(0, 0, 1), scale_factor=1)
         for p in range(self.num_particles):
-            mlab.points3d([self.predicted_path[0, p, 0]], [self.predicted_path[0, p, 1]], [self.predicted_path[0, p, 2]], mode='sphere', color=(0, 1, 0), scale_factor=0.5)
-            mlab.plot3d(self.predicted_path[:, p, 0], self.predicted_path[:, p, 1], self.predicted_path[:, p, 2], color=(0,1,0))
+            mlab.points3d([self.predicted_path[0, p, 0]], [self.predicted_path[0, p, 1]],
+                          [self.predicted_path[0, p, 2]], mode='sphere', color=(0, 1, 0), scale_factor=0.5)
+            mlab.plot3d(self.predicted_path[:, p, 0], self.predicted_path[:, p, 1], self.predicted_path[:, p, 2],
+                        color=(0, 1, 0))
         mlab.plot3d(self.optimal_x, self.optimal_y, self.optimal_z, color=(1, 0, 0))
-        mlab.points3d([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], mode='sphere', color=(1, 0, 0), scale_factor=0.5)
+        mlab.points3d([self.data.shape[0] - 0.5], [self.data.shape[1] - 0.5], [self.data.shape[2] - 0.5], mode='sphere',
+                      color=(1, 0, 0), scale_factor=0.5)
         f = mlab.gcf()
         f.scene.camera.azimuth(16)
 
         mlab.show()
 
 
-occ = Map_Object("maps", "paths")
+parser = argparse.ArgumentParser(description='Visualisation')
+parser.add_argument('--num_particles', nargs="?", type=int, default=3, help='number of particles')
+args = parser.parse_args()
+occ = Map_Object(args.num_particles, "maps", "paths")
 occ.generate_plot()

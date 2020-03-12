@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='DQN_Agent')
 parser.add_argument('--num_episodes', nargs="?", type=int, default=5000, help='number of episodes')
-parser.add_argument('--num_particles', nargs="?", type=int, default=2, help='number of particles')
+parser.add_argument('--num_particles', nargs="?", type=int, default=3, help='number of particles')
 parser.add_argument('--max_steps', nargs="?", type=int, default=50, help='number of steps')
 parser.add_argument('--map_file', nargs="?", type=str, default='maps', help='file name')
 parser.add_argument('--path_file', nargs="?", type=str, default='paths', help='file name')
