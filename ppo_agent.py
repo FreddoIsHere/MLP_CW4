@@ -4,14 +4,14 @@ from memory import Memory
 import torch.nn.functional as F
 from environments import Action
 from tqdm import tqdm
-
+from RAdam import RAdam
 import numpy as np
 from torch.distributions import Categorical
 import torch.nn as nn
 
 
 class PPO_Agent:
-    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=2e-4,
+    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-4,
                  gamma=0.99, eps_clip=0.2):
         self.env = env
         self.learning_rate = learning_rate
@@ -70,7 +70,7 @@ class PPO_Agent:
         surr1 = ratios * advantages
         surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
         policy_loss = -torch.min(surr1, surr2).mean()
-        loss = policy_loss + 0.5 * self.loss(rewards, next_state_values) - 0.001 * next_entropy
+        loss = policy_loss + 0.5 * self.loss(rewards, next_state_values) - 0.002 * next_entropy
         # take gradient step
         self.optimizer.zero_grad()
         loss.mean().backward()
@@ -85,7 +85,10 @@ class PPO_Agent:
 def train(env, agent, num_episodes, max_steps):
     episode_rewards = []
     episode_losses = []
+    target_reached_history = []
+    obstacles_hit_history = []
     target_reached = 0
+    obstacles_hit = 0
     tqdm_e = tqdm(range(num_episodes), desc='Training', leave=True, unit="episode")
     for e in tqdm_e:
         map = env.reset()
@@ -103,15 +106,20 @@ def train(env, agent, num_episodes, max_steps):
 
             map = next_map
 
+        obstacles_hit += env.obstacle_hit_count
         loss = agent.update()
         agent.memory.clear_memory()
 
-        if (e+1) % 51 == 0:
-            tqdm_e.set_description("Epi {} avg_r: {} Reached: {}".format(e, round(np.mean(episode_rewards[-50])), target_reached))
+        if (e) % 50 == 0 and e != 0:
+            avg_hits = round((1/50)*obstacles_hit)
+            tqdm_e.set_description("Epi {} avg_r: {} Reached: {} Avg_hits: {}".format(e, round(np.mean(episode_rewards[:-49])), target_reached, avg_hits))
+            target_reached_history.append(target_reached)
+            obstacles_hit_history.append(avg_hits)
             target_reached = 0
+            obstacles_hit = 0
         tqdm_e.refresh()
         episode_losses.append(loss)
         episode_rewards.append(episode_reward)
 
     agent.save()
-    return episode_rewards, episode_losses
+    return episode_rewards, episode_losses, target_reached_history, obstacles_hit_history
