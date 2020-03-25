@@ -26,7 +26,7 @@ class Map_Environment:
         if shuffle:
             for _ in range(np.random.randint(low=0, high=50)):
                 self.data_provider.get_map()
-        self.map_dim = (10, 10, 10)
+        self.map_dim = (30, 30, 30)
         self.max_num_particles = max_num_particles
         self.lower_bounds = np.array([0, 0, 0])
         self.upper_bounds = np.array([self.map_dim[0]-1, self.map_dim[1]-1, self.map_dim[2]-1])
@@ -75,7 +75,7 @@ class Map_Environment:
         elif self.map[state[0], state[1], state[2]] == 1:
             self.obstacle_hit_count += 1
             return prev_state, -5
-        return state, -1
+        return state, 0
 
     def sample(self):
         idx = np.random.randint(low=0, high=len(Action))

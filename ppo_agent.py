@@ -11,7 +11,7 @@ import torch.nn as nn
 
 
 class PPO_Agent:
-    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=1e-4,
+    def __init__(self, env, map_dim, action_dim, path="/home/frederik/MLP_CW4", learning_rate=8e-5,
                  gamma=0.99, eps_clip=0.2):
         self.env = env
         self.learning_rate = learning_rate
@@ -110,7 +110,7 @@ def train(env, agent, num_episodes, max_steps):
         loss = agent.update()
         agent.memory.clear_memory()
 
-        if (e) % 50 == 0 and e != 0:
+        if (e) % 100 == 0 and e != 0:
             avg_hits = round((1/50)*obstacles_hit)
             tqdm_e.set_description("Epi {} avg_r: {} Reached: {} Avg_hits: {}".format(e, round(np.mean(episode_rewards[:-49])), target_reached, avg_hits))
             target_reached_history.append(target_reached)
