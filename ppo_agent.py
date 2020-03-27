@@ -70,7 +70,7 @@ class PPO_Agent:
         surr1 = ratios * advantages
         surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
         policy_loss = -torch.min(surr1, surr2).mean()
-        loss = policy_loss + 0.5 * self.loss(rewards, next_state_values) - 0.002 * next_entropy
+        loss = policy_loss + 0.5 * self.loss(rewards, next_state_values) - 0.0008 * next_entropy
         # take gradient step
         self.optimizer.zero_grad()
         loss.mean().backward()

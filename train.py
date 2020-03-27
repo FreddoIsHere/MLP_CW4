@@ -6,9 +6,9 @@ from ppo_agent import PPO_Agent, train
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='DQN_Agent')
-parser.add_argument('--num_episodes', nargs="?", type=int, default=5000, help='number of episodes')
-parser.add_argument('--num_particles', nargs="?", type=int, default=2, help='number of particles')
-parser.add_argument('--max_steps', nargs="?", type=int, default=1000, help='number of steps')
+parser.add_argument('--num_episodes', nargs="?", type=int, default=50000, help='number of episodes')
+parser.add_argument('--num_particles', nargs="?", type=int, default=3, help='number of particles')
+parser.add_argument('--max_steps', nargs="?", type=int, default=100, help='number of steps')
 parser.add_argument('--map_file', nargs="?", type=str, default='maps', help='file name')
 parser.add_argument('--path_file', nargs="?", type=str, default='paths', help='file name')
 parser.add_argument('--path', nargs="?", type=str, default=os.path.abspath(os.getcwd()), help='file name')

@@ -14,7 +14,7 @@ class ActorCritic_Net(nn.Module):
 
     def __init__(self, map_dim, action_output_dim):
         super(ActorCritic_Net, self).__init__()
-        kernel_sizes = (2, 3)
+        kernel_sizes = (2, 4)
         self.conv_net = nn.Sequential(
             nn.Conv3d(in_channels=1, out_channels=4, kernel_size=kernel_sizes[0], stride=1),
             nn.ReLU(),
@@ -23,20 +23,20 @@ class ActorCritic_Net(nn.Module):
             Flatten(),
             nn.Linear(map_dim[0]*8*(map_dim[1]-(kernel_sizes[0]-1) -(kernel_sizes[1]-1))
                       *(map_dim[2]-(kernel_sizes[0]-1)-(kernel_sizes[1]-1))
-                      *(map_dim[3]-(kernel_sizes[0]-1)-(kernel_sizes[1]-1)), 32),
+                      *(map_dim[3]-(kernel_sizes[0]-1)-(kernel_sizes[1]-1)), 64),
         )
 
         self.action_net = nn.Sequential(
-            nn.Linear(32, 16),
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(16, action_output_dim),
+            nn.Linear(32, action_output_dim),
             nn.Softmax(dim=1)
         )
 
         self.value_net = nn.Sequential(
-            nn.Linear(32, 16),
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(16, 1),
+            nn.Linear(32, 1),
             nn.Tanh()
         )
 

@@ -180,9 +180,9 @@ def generate_from_parse(num_maps, map_format, num_obstacles, min_obstacle_size, 
 
 
 parser = argparse.ArgumentParser(description='Map Generator')
-parser.add_argument('--num_maps', nargs="?", type=int, default=5001, help='number of maps')
+parser.add_argument('--num_maps', nargs="?", type=int, default=50001, help='number of maps')
 parser.add_argument('--map_format', nargs="?", type=int, default=18, help='map format nxn')
-parser.add_argument('--num_obstacles', nargs="?", type=int, default=20, help='number of obstacles per map')
+parser.add_argument('--num_obstacles', nargs="?", type=int, default=15, help='number of obstacles per map')
 parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=4, help='obstacle size')
 parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=1, help='obstacle size')
 parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')
