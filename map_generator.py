@@ -162,9 +162,9 @@ class MapGenerator:
         return Path(self.return_map()).generate_path(method=self.path_finder)
 
 
-def generate_from_parse(num_maps, num_obstacles, min_obstacle_size, max_obstacle_size, file, path_finder, path_file):
+def generate_from_parse(num_maps, map_format, num_obstacles, min_obstacle_size, max_obstacle_size, file, path_finder, path_file):
     tqdm_e = tqdm(range(num_maps), desc='Maps generated', leave=True, unit=" maps")
-    generator = MapGenerator(28, 28, 28)
+    generator = MapGenerator(map_format, map_format, map_format)
     generator.set_path_finder(path_finder)
     file = open(file, "wb")
     path_file = open(path_file, "wb")
@@ -181,12 +181,12 @@ def generate_from_parse(num_maps, num_obstacles, min_obstacle_size, max_obstacle
 
 parser = argparse.ArgumentParser(description='Map Generator')
 parser.add_argument('--num_maps', nargs="?", type=int, default=5001, help='number of maps')
-parser.add_argument('--map_format', nargs="?", type=int, default=28, help='map format nxn')
-parser.add_argument('--num_obstacles', nargs="?", type=int, default=8, help='number of obstacles per map')
-parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=3, help='obstacle size')
+parser.add_argument('--map_format', nargs="?", type=int, default=18, help='map format nxn')
+parser.add_argument('--num_obstacles', nargs="?", type=int, default=20, help='number of obstacles per map')
+parser.add_argument('--max_obstacle_size', nargs="?", type=int, default=4, help='obstacle size')
 parser.add_argument('--min_obstacle_size', nargs="?", type=int, default=1, help='obstacle size')
 parser.add_argument('--file', nargs="?", type=str, default='maps', help='file name')
 parser.add_argument('--path_finder', nargs="?", type=str, default='A*', help='Path finder algorithm (A* or dijkstra)')
 parser.add_argument('--path_file', nargs="?", type=str, default='paths', help='Path file name')
 args = parser.parse_args()
-generate_from_parse(args.num_maps, args.num_obstacles, args.min_obstacle_size, args.max_obstacle_size, args.file, args.path_finder, args.path_file)
+generate_from_parse(args.num_maps, args.map_format, args.num_obstacles, args.min_obstacle_size, args.max_obstacle_size, args.file, args.path_finder, args.path_file)

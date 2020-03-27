@@ -42,6 +42,8 @@ class ActorCritic_Net(nn.Module):
 
     def forward(self, map): # use for prediction without training
         map = torch.from_numpy(map).float().unsqueeze(0)
+        if (torch.cuda.is_available()):
+            map = map.cuda()
 
         state = self.conv_net(map.unsqueeze(0))
         action_probs = self.action_net(state)
@@ -52,6 +54,8 @@ class ActorCritic_Net(nn.Module):
 
     def act(self, map, memory):
         map = torch.from_numpy(map).float().unsqueeze(0)
+        if (torch.cuda.is_available()):
+            map = map.cuda()
         memory.maps.append(map)
 
         state = self.conv_net(map.unsqueeze(0))

@@ -26,7 +26,7 @@ class Map_Environment:
         if shuffle:
             for _ in range(np.random.randint(low=0, high=50)):
                 self.data_provider.get_map()
-        self.map_dim = (30, 30, 30)
+        self.map_dim = (20, 20, 20)
         self.max_num_particles = max_num_particles
         self.lower_bounds = np.array([0, 0, 0])
         self.upper_bounds = np.array([self.map_dim[0]-1, self.map_dim[1]-1, self.map_dim[2]-1])
